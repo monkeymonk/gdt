@@ -22,7 +22,7 @@ func newListCmd(app *App) *cobra.Command {
 				fmt.Fprintln(os.Stderr, "No versions installed\n\n  gdt install <version>")
 				return nil
 			}
-			fmt.Println("Installed versions\n")
+			fmt.Println("Installed versions")
 			for _, v := range installed {
 				marker := "  "
 				if v == app.Config.DefaultVersion {

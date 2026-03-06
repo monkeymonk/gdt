@@ -31,7 +31,7 @@ func newTemplatesCmd(app *App) *cobra.Command {
 				fmt.Fprintln(os.Stderr, "No templates installed\n\n  gdt templates install <version>")
 				return nil
 			}
-			fmt.Println("Installed templates\n")
+			fmt.Println("Installed templates")
 			for _, t := range list {
 				fmt.Printf("  %s\n", t)
 			}

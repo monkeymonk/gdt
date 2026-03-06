@@ -90,7 +90,7 @@ func newPluginListCmd(app *App) *cobra.Command {
 				fmt.Fprintln(os.Stderr, "No plugins installed")
 				return nil
 			}
-			fmt.Println("Installed plugins\n")
+			fmt.Println("Installed plugins")
 			for _, p := range pluginList {
 				fmt.Printf("  %s v%s\n", p.Manifest.Name, p.Manifest.Version)
 			}

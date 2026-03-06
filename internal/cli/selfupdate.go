@@ -80,7 +80,7 @@ func runSelfUpdate(app *App) error {
 
 	os.Chmod(tmpPath, 0755)
 	if err := os.Rename(tmpPath, exe); err != nil {
-		return fmt.Errorf("failed to replace binary: %w\n\n  Try: sudo mv %s %s", tmpPath, exe)
+		return fmt.Errorf("failed to replace binary: %w\n\n  Try: sudo mv %s %s", err, tmpPath, exe)
 	}
 
 	fmt.Fprintf(os.Stderr, "Updated to %s\n", latestVersion)
