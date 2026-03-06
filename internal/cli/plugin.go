@@ -20,7 +20,9 @@ func newPluginCmd(app *App) *cobra.Command {
 	cmd.AddCommand(
 		newPluginInstallCmd(app),
 		newPluginListCmd(app),
+		newPluginUpdateCmd(app),
 		newPluginRemoveCmd(app),
+		newPluginNewCmd(app),
 	)
 
 	return cmd
@@ -94,6 +96,79 @@ func newPluginListCmd(app *App) *cobra.Command {
 			for _, p := range pluginList {
 				fmt.Printf("  %s v%s\n", p.Manifest.Name, p.Manifest.Version)
 			}
+			return nil
+		},
+	}
+}
+
+func newPluginUpdateCmd(app *App) *cobra.Command {
+	return &cobra.Command{
+		Use:   "update [name]",
+		Short: "Update plugins (all or by name)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			pluginList, err := plugins.Discover(app.PluginsDir())
+			if err != nil {
+				return err
+			}
+			if len(pluginList) == 0 {
+				fmt.Fprintln(os.Stderr, "No plugins installed")
+				return nil
+			}
+
+			for _, p := range pluginList {
+				if len(args) > 0 && p.Manifest.Name != args[0] {
+					continue
+				}
+				fmt.Fprintf(os.Stderr, "Updating %s...\n", p.Manifest.Name)
+				gitCmd := exec.Command("git", "-C", p.Dir, "pull", "--ff-only")
+				gitCmd.Stdout = os.Stderr
+				gitCmd.Stderr = os.Stderr
+				if err := gitCmd.Run(); err != nil {
+					fmt.Fprintf(os.Stderr, "  failed to update %s: %s\n", p.Manifest.Name, err)
+					continue
+				}
+				fmt.Fprintf(os.Stderr, "  %s updated\n", p.Manifest.Name)
+			}
+			return nil
+		},
+	}
+}
+
+func newPluginNewCmd(app *App) *cobra.Command {
+	return &cobra.Command{
+		Use:   "new <name>",
+		Short: "Scaffold a new plugin",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			name := args[0]
+			dir := filepath.Join(".", "gdt-"+name)
+
+			if _, err := os.Stat(dir); err == nil {
+				return fmt.Errorf("directory %s already exists", dir)
+			}
+
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return err
+			}
+
+			manifest := fmt.Sprintf(`name = %q
+version = "0.1.0"
+commands = [%q]
+requires_gdt = ">=1.0"
+description = ""
+`, name, name)
+
+			if err := os.WriteFile(filepath.Join(dir, plugins.ManifestFile), []byte(manifest), 0644); err != nil {
+				return err
+			}
+
+			readme := fmt.Sprintf("# gdt-%s\n\nA gdt plugin.\n\n## Usage\n\n```sh\ngdt %s\n```\n", name, name)
+			if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte(readme), 0644); err != nil {
+				return err
+			}
+
+			fmt.Fprintf(os.Stderr, "Plugin scaffolded at %s\n", dir)
+			fmt.Fprintf(os.Stderr, "\n  Edit %s to configure your plugin\n", filepath.Join(dir, plugins.ManifestFile))
 			return nil
 		},
 	}
