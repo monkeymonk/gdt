@@ -2,12 +2,75 @@ package project
 
 import (
 	"crypto/rand"
+	"embed"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"text/template"
 )
+
+//go:embed templates
+var embeddedTemplates embed.FS
+
+// AvailableTemplates returns the list of built-in scaffold template names.
+func AvailableTemplates() []string {
+	return []string{"2d", "3d"}
+}
+
+// GenerateFromTemplate creates a project from an embedded template (2d or 3d).
+// Template files support Go text/template placeholders (e.g. {{.Name}}).
+func GenerateFromTemplate(templateName string, destDir string, name string, version string) error {
+	base := "templates/" + templateName
+	entries, err := fs.ReadDir(embeddedTemplates, base)
+	if err != nil {
+		return fmt.Errorf("unknown template: %s (available: 2d, 3d)", templateName)
+	}
+
+	if _, err := os.Stat(filepath.Join(destDir, "project.godot")); err == nil {
+		return fmt.Errorf("project.godot already exists in %s", destDir)
+	}
+
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return err
+	}
+
+	data := map[string]string{
+		"Name": name,
+	}
+
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		raw, readErr := fs.ReadFile(embeddedTemplates, base+"/"+e.Name())
+		if readErr != nil {
+			return readErr
+		}
+
+		tmpl, parseErr := template.New(e.Name()).Parse(string(raw))
+		if parseErr != nil {
+			// Not a valid template; write raw content
+			if writeErr := os.WriteFile(filepath.Join(destDir, e.Name()), raw, 0o644); writeErr != nil {
+				return writeErr
+			}
+			continue
+		}
+
+		var buf strings.Builder
+		if execErr := tmpl.Execute(&buf, data); execErr != nil {
+			return execErr
+		}
+
+		if writeErr := os.WriteFile(filepath.Join(destDir, e.Name()), []byte(buf.String()), 0o644); writeErr != nil {
+			return writeErr
+		}
+	}
+
+	return os.WriteFile(filepath.Join(destDir, ".godot-version"), []byte(version+"\n"), 0o644)
+}
 
 type ScaffoldOptions struct {
 	Name     string

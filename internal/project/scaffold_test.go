@@ -191,6 +191,85 @@ func TestGenerateCSharpAlreadyMono(t *testing.T) {
 	}
 }
 
+func TestGenerateFromTemplate2D(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "myproject")
+	err := GenerateFromTemplate("2d", dir, "MyGame", "4.3")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// project.godot should exist with name substituted
+	data, err := os.ReadFile(filepath.Join(dir, "project.godot"))
+	if err != nil {
+		t.Fatal("project.godot should exist")
+	}
+	content := string(data)
+	if !strings.Contains(content, `config/name="MyGame"`) {
+		t.Error("project.godot should contain substituted project name")
+	}
+	if !strings.Contains(content, "run/main_scene") {
+		t.Error("project.godot should contain main_scene")
+	}
+
+	// main.tscn should exist with Node2D
+	sceneData, err := os.ReadFile(filepath.Join(dir, "main.tscn"))
+	if err != nil {
+		t.Fatal("main.tscn should exist")
+	}
+	if !strings.Contains(string(sceneData), "Node2D") {
+		t.Error("main.tscn should contain Node2D")
+	}
+
+	// .godot-version should exist
+	verData, err := os.ReadFile(filepath.Join(dir, ".godot-version"))
+	if err != nil {
+		t.Fatal(".godot-version should exist")
+	}
+	if strings.TrimSpace(string(verData)) != "4.3" {
+		t.Errorf(".godot-version = %q, want %q", strings.TrimSpace(string(verData)), "4.3")
+	}
+}
+
+func TestGenerateFromTemplate3D(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "myproject")
+	err := GenerateFromTemplate("3d", dir, "My3DGame", "4.4")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sceneData, err := os.ReadFile(filepath.Join(dir, "main.tscn"))
+	if err != nil {
+		t.Fatal("main.tscn should exist")
+	}
+	if !strings.Contains(string(sceneData), "Node3D") {
+		t.Error("main.tscn should contain Node3D")
+	}
+
+	data, _ := os.ReadFile(filepath.Join(dir, "project.godot"))
+	if !strings.Contains(string(data), `config/name="My3DGame"`) {
+		t.Error("project.godot should contain substituted project name")
+	}
+}
+
+func TestGenerateFromTemplateUnknown(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "myproject")
+	err := GenerateFromTemplate("fps", dir, "game", "4.3")
+	if err == nil {
+		t.Error("should error for unknown template")
+	}
+}
+
+func TestGenerateFromTemplateAlreadyExists(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "myproject")
+	os.MkdirAll(dir, 0755)
+	os.WriteFile(filepath.Join(dir, "project.godot"), []byte("exists"), 0644)
+
+	err := GenerateFromTemplate("2d", dir, "game", "4.3")
+	if err == nil {
+		t.Error("should error when project.godot already exists")
+	}
+}
+
 func TestCloneTemplate(t *testing.T) {
 	// Create a fake "remote" repo
 	repoDir := t.TempDir()
