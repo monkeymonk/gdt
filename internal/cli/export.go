@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/monkeymonk/gdt/internal/engine"
+	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/monkeymonk/gdt/internal/project"
 	"github.com/spf13/cobra"
 )
@@ -126,6 +127,16 @@ func runExport(app *App, preset string, outputDir string, debug bool, verbose bo
 		exportFlag = "--export-debug"
 	}
 
+	pluginSvc := plugins.NewService(app.PluginsDir())
+	hookCtx := plugins.HookContext{
+		ProjectRoot:  root,
+		GodotVersion: version,
+		EnginePath:   binPath,
+	}
+	if err := pluginSvc.RunHooks(plugins.BeforeExport, hookCtx); err != nil {
+		return err
+	}
+
 	fmt.Fprintf(os.Stderr, "Exporting %q...\n", preset)
 	godotCmd := exec.Command(binPath, "--headless", exportFlag, preset, outputFile)
 	godotCmd.Dir = root
@@ -152,5 +163,6 @@ func runExport(app *App, preset string, outputDir string, debug bool, verbose bo
 	}
 
 	fmt.Fprintf(os.Stderr, "Export complete: %s\n", outputDir)
+	_ = pluginSvc.RunHooks(plugins.AfterExport, hookCtx)
 	return nil
 }
