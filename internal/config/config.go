@@ -39,9 +39,3 @@ func Save(path string, cfg *Config) error {
 	return os.WriteFile(path, buf.Bytes(), 0644)
 }
 
-func ResolveHome(defaultHome string) string {
-	if env := os.Getenv("GDT_HOME"); env != "" {
-		return env
-	}
-	return defaultHome
-}

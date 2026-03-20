@@ -15,26 +15,6 @@ func TestDetect(t *testing.T) {
 	}
 }
 
-func TestDefaultHome(t *testing.T) {
-	tests := []struct {
-		name string
-		os   string
-	}{
-		{"linux", "linux"},
-		{"darwin", "darwin"},
-		{"windows", "windows"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			p := Info{OS: tt.os, Arch: "amd64"}
-			home := p.DefaultHome()
-			if home == "" {
-				t.Fatal("DefaultHome should not be empty")
-			}
-		})
-	}
-}
-
 func TestDetectMatchesRuntime(t *testing.T) {
 	p := Detect()
 	if p.OS != runtime.GOOS {

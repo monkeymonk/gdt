@@ -19,7 +19,7 @@ type App struct {
 
 func NewApp(version string) (*App, error) {
 	plat := platform.Detect()
-	home := config.ResolveHome(plat.DefaultHome())
+	home := config.ResolveHome()
 
 	configPath := filepath.Join(home, "config.toml")
 	cfg, err := config.Load(configPath)

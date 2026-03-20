@@ -1,8 +1,6 @@
 package platform
 
 import (
-	"os"
-	"path/filepath"
 	"runtime"
 )
 
@@ -18,15 +16,3 @@ func Detect() Info {
 	}
 }
 
-func (p Info) DefaultHome() string {
-	switch p.OS {
-	case "darwin":
-		home, _ := os.UserHomeDir()
-		return filepath.Join(home, "Library", "Application Support", "gdt")
-	case "windows":
-		return filepath.Join(os.Getenv("LOCALAPPDATA"), "gdt")
-	default:
-		home, _ := os.UserHomeDir()
-		return filepath.Join(home, ".gdt")
-	}
-}

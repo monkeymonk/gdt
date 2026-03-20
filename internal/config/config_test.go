@@ -75,21 +75,3 @@ func TestSaveCreatesParentDirs(t *testing.T) {
 	}
 }
 
-func TestResolveHome(t *testing.T) {
-	t.Run("env override", func(t *testing.T) {
-		dir := t.TempDir()
-		t.Setenv("GDT_HOME", dir)
-		home := ResolveHome("default")
-		if home != dir {
-			t.Errorf("home = %q, want %q", home, dir)
-		}
-	})
-
-	t.Run("default fallback", func(t *testing.T) {
-		t.Setenv("GDT_HOME", "")
-		home := ResolveHome("/default/path")
-		if home != "/default/path" {
-			t.Errorf("home = %q, want %q", home, "/default/path")
-		}
-	})
-}
