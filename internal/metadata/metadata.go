@@ -29,16 +29,6 @@ func (c *Cache) IsStale() bool {
 	return time.Since(c.UpdatedAt) > CacheTTL
 }
 
-type ghRelease struct {
-	TagName string    `json:"tag_name"`
-	Assets  []ghAsset `json:"assets"`
-}
-
-type ghAsset struct {
-	Name               string `json:"name"`
-	BrowserDownloadURL string `json:"browser_download_url"`
-}
-
 func FetchReleases(apiURL string, token string) ([]Release, error) {
 	req, err := http.NewRequest("GET", apiURL, nil)
 	if err != nil {
@@ -60,7 +50,7 @@ func FetchReleases(apiURL string, token string) ([]Release, error) {
 		return nil, fmt.Errorf("GitHub API error %d: %s", resp.StatusCode, string(body))
 	}
 
-	var ghReleases []ghRelease
+	var ghReleases []GitHubRelease
 	if err := json.NewDecoder(resp.Body).Decode(&ghReleases); err != nil {
 		return nil, err
 	}
@@ -75,7 +65,7 @@ func FetchReleases(apiURL string, token string) ([]Release, error) {
 	return releases, nil
 }
 
-func parseRelease(ghr ghRelease) *Release {
+func parseRelease(ghr GitHubRelease) *Release {
 	tag := ghr.TagName
 	if !strings.HasSuffix(tag, "-stable") {
 		return nil
@@ -84,7 +74,7 @@ func parseRelease(ghr ghRelease) *Release {
 
 	assets := make(map[string]string)
 	for _, a := range ghr.Assets {
-		assets[a.Name] = a.BrowserDownloadURL
+		assets[a.Name] = a.URL
 	}
 
 	return &Release{
