@@ -93,7 +93,11 @@ func (s *Service) InstallTemplates(ctx context.Context, query string, opts Insta
 	downloadDir := filepath.Join(s.cacheDir(), "downloads")
 	archivePath := filepath.Join(downloadDir, artifactName)
 
-	if err := download.File(ctx, downloadURL, archivePath, download.DownloadOpts{}); err != nil {
+	dlOpts := download.DownloadOpts{
+		Resume:  true,
+		Mirrors: s.Config.Mirrors,
+	}
+	if err := download.File(ctx, downloadURL, archivePath, dlOpts); err != nil {
 		return nil, fmt.Errorf("download failed: %w", err)
 	}
 
