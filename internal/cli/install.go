@@ -35,7 +35,7 @@ func newInstallCmd(app *App) *cobra.Command {
 				}
 			}
 			if query == "" && isTTY() {
-				releases, err := loadMetadata(app, refresh)
+				releases, err := metadata.EnsureCache(app.CachePath(), "https://api.github.com/repos/godotengine/godot/releases", os.Getenv("GDT_GITHUB_TOKEN"), refresh)
 				if err != nil {
 					return err
 				}
@@ -60,7 +60,7 @@ func newInstallCmd(app *App) *cobra.Command {
 }
 
 func runInstall(app *App, query string, mono bool, force bool, refresh bool) error {
-	releases, err := loadMetadata(app, refresh)
+	releases, err := metadata.EnsureCache(app.CachePath(), "https://api.github.com/repos/godotengine/godot/releases", os.Getenv("GDT_GITHUB_TOKEN"), refresh)
 	if err != nil {
 		return err
 	}
@@ -99,12 +99,14 @@ func runInstall(app *App, query string, mono bool, force bool, refresh bool) err
 	if checksumURL, ok := release.Assets["SHA512-SUMS.txt"]; ok {
 		checksumPath := filepath.Join(downloadDir, "SHA512-SUMS.txt")
 		if err := download.File(checksumURL, checksumPath); err == nil {
-			if checksum := findChecksum(checksumPath, artifactName); checksum != "" {
-				if err := download.VerifyChecksum(archivePath, checksum); err != nil {
-					os.Remove(archivePath)
-					return fmt.Errorf("checksum verification failed: %w", err)
+			if data, err := os.ReadFile(checksumPath); err == nil {
+				if checksum := metadata.FindChecksum(string(data), artifactName); checksum != "" {
+					if err := download.VerifyChecksum(archivePath, checksum); err != nil {
+						os.Remove(archivePath)
+						return fmt.Errorf("checksum verification failed: %w", err)
+					}
+					fmt.Fprintln(os.Stderr, "  checksum verified")
 				}
-				fmt.Fprintln(os.Stderr, "  checksum verified")
 			}
 		}
 	}

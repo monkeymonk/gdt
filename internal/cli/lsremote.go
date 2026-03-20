@@ -2,7 +2,9 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/monkeymonk/gdt/internal/metadata"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +15,7 @@ func newLsRemoteCmd(app *App) *cobra.Command {
 		Use:   "ls-remote",
 		Short: "List available remote versions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			releases, err := loadMetadata(app, refresh)
+			releases, err := metadata.EnsureCache(app.CachePath(), "https://api.github.com/repos/godotengine/godot/releases", os.Getenv("GDT_GITHUB_TOKEN"), refresh)
 			if err != nil {
 				return err
 			}

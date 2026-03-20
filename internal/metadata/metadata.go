@@ -118,6 +118,37 @@ func SaveCache(path string, cache *Cache) error {
 	return os.WriteFile(path, data, 0644)
 }
 
+// EnsureCache loads cached releases, refreshing from the API if stale or forced.
+// Falls back to stale cache data if the fetch fails.
+func EnsureCache(cachePath string, apiURL string, token string, forceRefresh bool) ([]Release, error) {
+	if !forceRefresh {
+		cache, err := LoadCache(cachePath)
+		if err == nil && !cache.IsStale() {
+			return cache.Releases, nil
+		}
+	}
+
+	fmt.Fprintln(os.Stderr, "Fetching release metadata...")
+	releases, err := FetchReleases(apiURL, token)
+	if err != nil {
+		// Fallback to stale cache if fetch fails
+		cache, cacheErr := LoadCache(cachePath)
+		if cacheErr == nil && len(cache.Releases) > 0 {
+			fmt.Fprintln(os.Stderr, "Warning: using stale cache (fetch failed)")
+			return cache.Releases, nil
+		}
+		return nil, err
+	}
+
+	cache := &Cache{
+		UpdatedAt: time.Now(),
+		Releases:  releases,
+	}
+	SaveCache(cachePath, cache)
+
+	return releases, nil
+}
+
 func ResolveVersion(releases []Release, query string) (*Release, error) {
 	if query == "latest" || query == "stable" {
 		for i := range releases {
