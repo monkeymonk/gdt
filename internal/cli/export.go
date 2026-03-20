@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/monkeymonk/gdt/internal/engine"
-	"github.com/monkeymonk/gdt/internal/export"
 	"github.com/monkeymonk/gdt/internal/project"
 	"github.com/spf13/cobra"
 )
@@ -38,7 +37,7 @@ func newExportCmd(app *App) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				presets, err := export.ParsePresets(root)
+				presets, err := project.ParsePresets(root)
 				if err != nil {
 					return err
 				}
@@ -73,7 +72,7 @@ func runExportList() error {
 		return err
 	}
 
-	presets, err := export.ParsePresets(root)
+	presets, err := project.ParsePresets(root)
 	if err != nil {
 		return err
 	}
@@ -91,7 +90,7 @@ func runExport(app *App, preset string, outputDir string, debug bool, verbose bo
 		return err
 	}
 
-	presets, err := export.ParsePresets(root)
+	presets, err := project.ParsePresets(root)
 	if err != nil {
 		return err
 	}
@@ -116,7 +115,7 @@ func runExport(app *App, preset string, outputDir string, debug bool, verbose bo
 	}
 
 	if outputDir == "" {
-		outputDir = export.DefaultOutputDir(preset)
+		outputDir = project.DefaultOutputDir(preset)
 	}
 	os.MkdirAll(outputDir, 0755)
 
