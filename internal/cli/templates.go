@@ -1,14 +1,11 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
-	"github.com/monkeymonk/gdt/internal/download"
-	"github.com/monkeymonk/gdt/internal/metadata"
-	"github.com/monkeymonk/gdt/internal/templates"
+	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +24,8 @@ func newTemplatesListCmd(app *App) *cobra.Command {
 		Use:   "list",
 		Short: "List installed templates",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			list, err := templates.List(app.TemplatesDir())
+			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			list, err := svc.ListTemplates()
 			if err != nil {
 				return err
 			}
@@ -68,68 +66,27 @@ func newTemplatesInstallCmd(app *App) *cobra.Command {
 			if query == "" {
 				return fmt.Errorf("version required\n\n  gdt templates install <version>")
 			}
-			return runTemplatesInstall(app, query, mono, refresh)
+
+			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			fmt.Fprintf(os.Stderr, "Installing templates for %s...\n", query)
+			result, err := svc.InstallTemplates(cmd.Context(), query, engine.InstallOpts{
+				Mono:    mono,
+				Refresh: refresh,
+			})
+			if errors.Is(err, engine.ErrAlreadyInstalled) {
+				fmt.Fprintf(os.Stderr, "Templates for %s already installed\n", result.VersionName)
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(os.Stderr, "Templates for %s installed\n", result.VersionName)
+			return nil
 		},
 	}
 
 	cmd.Flags().BoolVar(&mono, "mono", false, "Install Mono templates")
 	cmd.Flags().BoolVar(&refresh, "refresh", false, "Refresh metadata cache")
 	return cmd
-}
-
-func runTemplatesInstall(app *App, query string, mono bool, refresh bool) error {
-	releases, err := metadata.EnsureCache(app.CachePath(), "https://api.github.com/repos/godotengine/godot/releases", os.Getenv("GDT_GITHUB_TOKEN"), refresh)
-	if err != nil {
-		return err
-	}
-
-	release, err := metadata.ResolveVersion(releases, query)
-	if err != nil {
-		return err
-	}
-
-	versionName := release.Version
-	if mono {
-		versionName += "-mono"
-	}
-
-	artifactName := metadata.TemplateArtifactName(release.Version, mono)
-	downloadURL, ok := release.Assets[artifactName]
-	if !ok {
-		for name, url := range release.Assets {
-			if strings.Contains(name, "export_templates") {
-				if mono && strings.Contains(name, "mono") {
-					artifactName = name
-					downloadURL = url
-					ok = true
-					break
-				} else if !mono && !strings.Contains(name, "mono") {
-					artifactName = name
-					downloadURL = url
-					ok = true
-					break
-				}
-			}
-		}
-		if !ok {
-			return fmt.Errorf("templates not found for version %s", release.Version)
-		}
-	}
-
-	downloadDir := filepath.Join(app.CacheDir(), "downloads")
-	archivePath := filepath.Join(downloadDir, artifactName)
-	fmt.Fprintf(os.Stderr, "Installing templates for %s...\n", versionName)
-	if err := download.File(downloadURL, archivePath); err != nil {
-		return fmt.Errorf("download failed: %w", err)
-	}
-
-	destDir := filepath.Join(app.TemplatesDir(), versionName)
-	os.MkdirAll(filepath.Dir(destDir), 0755)
-	os.RemoveAll(destDir)
-	if err := download.ExtractZip(archivePath, destDir); err != nil {
-		return fmt.Errorf("extraction failed: %w", err)
-	}
-
-	fmt.Fprintf(os.Stderr, "Templates for %s installed\n", versionName)
-	return nil
 }

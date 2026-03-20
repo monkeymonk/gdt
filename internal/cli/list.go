@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/monkeymonk/gdt/internal/versions"
+	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +14,8 @@ func newListCmd(app *App) *cobra.Command {
 		Aliases: []string{"ls"},
 		Short:   "List installed versions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			installed, err := versions.List(app.VersionsDir())
+			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			installed, err := svc.List()
 			if err != nil {
 				return err
 			}
@@ -25,10 +26,10 @@ func newListCmd(app *App) *cobra.Command {
 			fmt.Println("Installed versions")
 			for _, v := range installed {
 				marker := "  "
-				if v == app.Config.DefaultVersion {
+				if v.IsDefault {
 					marker = "* "
 				}
-				fmt.Printf("%s%s\n", marker, v)
+				fmt.Printf("%s%s\n", marker, v.Version)
 			}
 			return nil
 		},

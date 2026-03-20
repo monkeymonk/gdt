@@ -6,17 +6,32 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/charmbracelet/lipgloss"
+	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/monkeymonk/gdt/internal/project"
-	"github.com/monkeymonk/gdt/internal/versions"
 	"github.com/spf13/cobra"
 )
+
+var (
+	styleBold    = lipgloss.NewStyle().Bold(true)
+	stylePrimary = lipgloss.NewStyle().Foreground(lipgloss.Color("69"))
+	styleDim     = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+)
+
+func banner(version string) string {
+	return "\n" +
+		stylePrimary.Render("  ┌─┐┌┬┐┌┬┐") + "\n" +
+		stylePrimary.Render("  │ ┬ ││ │ ") + "\n" +
+		stylePrimary.Render("  └─┘─┴┘ ┴ ") + "  " + styleDim.Render("v"+version) + "\n\n" +
+		styleBold.Render("  Godot Developer Toolchain") + "\n"
+}
 
 func NewRootCmd(app *App) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "gdt",
 		Short:         "Godot Developer Toolchain",
-		Long:          "A cross-platform CLI to manage Godot Engine installations.",
+		Long:          banner(app.Version),
 		Version:       app.Version,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -32,12 +47,19 @@ func NewRootCmd(app *App) *cobra.Command {
 		newUseCmd(app),
 		newLocalCmd(app),
 		newRunCmd(app),
+		newEditCmd(app),
 		newDoctorCmd(app),
 		newUpdateCmd(app),
 		newShellCmd(app),
 		newSelfUpdateCmd(app),
 		newTemplatesCmd(app),
 		newPluginCmd(app),
+		newNewCmd(app),
+		newLspCmd(app),
+		newDapCmd(app),
+		newExportCmd(app),
+		newCiCmd(app),
+		newCompletionCmd(),
 	)
 
 	// Plugin dispatch for unknown commands
@@ -67,19 +89,38 @@ func dispatchPlugin(app *App, p plugins.Plugin, args []string) {
 
 	cwd, _ := os.Getwd()
 	projectRoot, _ := project.DetectRoot(cwd)
-	installed, _ := versions.List(app.VersionsDir())
-	ver, _ := versions.Resolve(cwd, os.Getenv("GDT_GODOT_VERSION"), app.Config.DefaultVersion, installed)
-	enginePath := ""
-	if ver != "" {
-		enginePath, _ = versions.AbsoluteBinaryPath(app.VersionsDir(), ver, app.Platform.OS)
-	}
+
+	svc := engine.NewService(app.Home, app.Platform, app.Config)
+	resolved, _ := svc.Resolve(cwd)
 
 	cmd.Env = append(os.Environ(),
 		"GDT_HOME="+app.Home,
 		"GDT_PROJECT_ROOT="+projectRoot,
-		"GDT_GODOT_VERSION="+ver,
-		"GDT_ENGINE_PATH="+enginePath,
+		"GDT_GODOT_VERSION="+resolved.Version,
+		"GDT_ENGINE_PATH="+resolved.BinaryPath,
 	)
 
 	cmd.Run()
+}
+
+// resolveProjectVersion detects the project root and resolves the engine version.
+// Used by lsp, dap, and export commands.
+func resolveProjectVersion(app *App) (root string, version string, binPath string, err error) {
+	cwd, _ := os.Getwd()
+	root, err = project.DetectRoot(cwd)
+	if err != nil {
+		err = fmt.Errorf("no Godot project found\n\n  Run from a directory containing project.godot")
+		return
+	}
+
+	svc := engine.NewService(app.Home, app.Platform, app.Config)
+	resolved, resolveErr := svc.Resolve(cwd)
+	if resolveErr != nil {
+		err = resolveErr
+		return
+	}
+
+	version = resolved.Version
+	binPath = resolved.BinaryPath
+	return
 }

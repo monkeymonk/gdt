@@ -1,14 +1,12 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
-	"github.com/monkeymonk/gdt/internal/desktop"
-	"github.com/monkeymonk/gdt/internal/download"
+	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/metadata"
-	"github.com/monkeymonk/gdt/internal/versions"
 	"github.com/spf13/cobra"
 )
 
@@ -22,6 +20,8 @@ func newInstallCmd(app *App) *cobra.Command {
 		Short: "Install a Godot engine version",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			svc := engine.NewService(app.Home, app.Platform, app.Config)
+
 			query := ""
 			if len(args) > 0 {
 				query = args[0]
@@ -29,9 +29,9 @@ func newInstallCmd(app *App) *cobra.Command {
 			if query == "" {
 				// Try .godot-version file first
 				cwd, _ := os.Getwd()
-				ver, err := versions.ResolveFromFile(cwd)
-				if err == nil && ver != "" {
-					query = ver
+				resolved, err := svc.Resolve(cwd)
+				if err == nil && resolved.Version != "" {
+					query = resolved.Version
 				}
 			}
 			if query == "" && isTTY() {
@@ -48,7 +48,24 @@ func newInstallCmd(app *App) *cobra.Command {
 			if query == "" {
 				return fmt.Errorf("version required\n\n  gdt install <version>\n  gdt ls-remote")
 			}
-			return runInstall(app, query, mono, force, refresh)
+
+			fmt.Fprintf(os.Stderr, "Installing Godot %s...\n", query)
+			result, err := svc.Install(cmd.Context(), query, engine.InstallOpts{
+				Mono:    mono,
+				Force:   force,
+				Refresh: refresh,
+			})
+			if errors.Is(err, engine.ErrAlreadyInstalled) {
+				fmt.Fprintf(os.Stderr, "Version %s is already installed (use --force to reinstall)\n", result.VersionName)
+				return nil
+			}
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(os.Stderr, "Godot %s installed\n", result.VersionName)
+			fmt.Fprintf(os.Stderr, "\n  Hint: install export templates with: gdt templates install %s\n", result.Version)
+			return nil
 		},
 	}
 
@@ -57,85 +74,4 @@ func newInstallCmd(app *App) *cobra.Command {
 	cmd.Flags().BoolVar(&refresh, "refresh", false, "Refresh metadata cache before resolving")
 
 	return cmd
-}
-
-func runInstall(app *App, query string, mono bool, force bool, refresh bool) error {
-	releases, err := metadata.EnsureCache(app.CachePath(), "https://api.github.com/repos/godotengine/godot/releases", os.Getenv("GDT_GITHUB_TOKEN"), refresh)
-	if err != nil {
-		return err
-	}
-
-	release, err := metadata.ResolveVersion(releases, query)
-	if err != nil {
-		return err
-	}
-
-	versionName := release.Version
-	if mono {
-		versionName += "-mono"
-	}
-
-	if !force && versions.IsInstalled(app.VersionsDir(), versionName) {
-		fmt.Fprintf(os.Stderr, "Version %s is already installed (use --force to reinstall)\n", versionName)
-		return nil
-	}
-
-	artifactName, err := metadata.ResolveEngineArtifact(release, app.Platform, mono)
-	if err != nil {
-		return err
-	}
-	downloadURL, ok := release.Assets[artifactName]
-	if !ok {
-		return fmt.Errorf("artifact %q not found for version %s", artifactName, release.Version)
-	}
-
-	downloadDir := filepath.Join(app.CacheDir(), "downloads")
-	archivePath := filepath.Join(downloadDir, artifactName)
-	fmt.Fprintf(os.Stderr, "Installing Godot %s...\n", versionName)
-	if err := download.File(downloadURL, archivePath); err != nil {
-		return fmt.Errorf("download failed: %w", err)
-	}
-
-	if checksumURL, ok := release.Assets["SHA512-SUMS.txt"]; ok {
-		checksumPath := filepath.Join(downloadDir, "SHA512-SUMS.txt")
-		if err := download.File(checksumURL, checksumPath); err == nil {
-			if data, err := os.ReadFile(checksumPath); err == nil {
-				if checksum := metadata.FindChecksum(string(data), artifactName); checksum != "" {
-					if err := download.VerifyChecksum(archivePath, checksum); err != nil {
-						os.Remove(archivePath)
-						return fmt.Errorf("checksum verification failed: %w", err)
-					}
-					fmt.Fprintln(os.Stderr, "  checksum verified")
-				}
-			}
-		}
-	}
-
-	tmpDir := filepath.Join(app.CacheDir(), "tmp")
-	os.MkdirAll(tmpDir, 0755)
-	if err := download.ExtractZip(archivePath, tmpDir); err != nil {
-		return fmt.Errorf("extraction failed: %w", err)
-	}
-
-	destDir := filepath.Join(app.VersionsDir(), versionName)
-	os.MkdirAll(filepath.Dir(destDir), 0755)
-	os.RemoveAll(destDir)
-	if err := os.Rename(tmpDir, destDir); err != nil {
-		return fmt.Errorf("failed to install: %w", err)
-	}
-
-	fmt.Fprintf(os.Stderr, "Godot %s installed\n", versionName)
-
-	// Create/update desktop launcher (Linux only, best-effort)
-	if !desktop.IsInstalled() {
-		gdtBin := desktop.GdtBinaryPath()
-		if iconPath, err := desktop.InstallIcon(app.Home); err == nil {
-			if err := desktop.Install(gdtBin, iconPath); err == nil {
-				fmt.Fprintln(os.Stderr, "  desktop launcher created")
-			}
-		}
-	}
-
-	fmt.Fprintf(os.Stderr, "\n  Hint: install export templates with: gdt templates install %s\n", release.Version)
-	return nil
 }

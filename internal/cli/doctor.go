@@ -6,10 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/monkeymonk/gdt/internal/project"
-	"github.com/monkeymonk/gdt/internal/templates"
-	"github.com/monkeymonk/gdt/internal/versions"
 	"github.com/spf13/cobra"
 )
 
@@ -24,6 +23,7 @@ func newDoctorCmd(app *App) *cobra.Command {
 }
 
 func runDoctor(app *App) error {
+	svc := engine.NewService(app.Home, app.Platform, app.Config)
 	issues := 0
 
 	shimPath := filepath.Join(app.ShimsDir(), "godot")
@@ -44,29 +44,28 @@ func runDoctor(app *App) error {
 		issues++
 	}
 
-	installed, _ := versions.List(app.VersionsDir())
+	installed, _ := svc.List()
 	if len(installed) == 0 {
 		fmt.Println("  WARN  no engine versions installed")
 		fmt.Printf("        Run: gdt install <version>\n")
 		issues++
 	} else {
 		for _, v := range installed {
-			binPath := filepath.Join(app.VersionsDir(), versions.BinaryPath(v, app.Platform.OS))
-			if _, err := os.Stat(binPath); err == nil {
-				fmt.Printf("  ok  engine %s valid\n", v)
+			if _, err := svc.BinaryPath(v.Version); err == nil {
+				fmt.Printf("  ok  engine %s valid\n", v.Version)
 			} else {
-				fmt.Printf("  FAIL  engine %s binary missing\n", v)
+				fmt.Printf("  FAIL  engine %s binary missing\n", v.Version)
 				issues++
 			}
 		}
 	}
 
 	for _, v := range installed {
-		if templates.IsInstalled(app.TemplatesDir(), v) {
-			fmt.Printf("  ok  templates for %s\n", v)
+		if svc.TemplatesInstalled(v.Version) {
+			fmt.Printf("  ok  templates for %s\n", v.Version)
 		} else {
-			fmt.Printf("  WARN  templates missing for %s\n", v)
-			fmt.Printf("        Run: gdt templates install %s\n", v)
+			fmt.Printf("  WARN  templates missing for %s\n", v.Version)
+			fmt.Printf("        Run: gdt templates install %s\n", v.Version)
 			issues++
 		}
 	}
@@ -75,8 +74,8 @@ func runDoctor(app *App) error {
 	if root, err := project.DetectRoot(cwd); err == nil {
 		hasCSharp, _ := project.HasCSharp(root)
 		if hasCSharp {
-			envVer := os.Getenv("GDT_GODOT_VERSION")
-			ver, _ := versions.Resolve(cwd, envVer, app.Config.DefaultVersion, installed)
+			resolved, _ := svc.Resolve(cwd)
+			ver := resolved.Version
 			if ver != "" && !strings.HasSuffix(ver, "-mono") {
 				fmt.Println("  WARN  project uses C# but mono engine not installed")
 				baseVer := strings.TrimSuffix(ver, "-mono")
