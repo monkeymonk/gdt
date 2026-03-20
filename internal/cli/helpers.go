@@ -37,20 +37,6 @@ func loadMetadata(app *App, forceRefresh bool) ([]metadata.Release, error) {
 	return releases, nil
 }
 
-func resolveEngineArtifact(release *metadata.Release, platformArtifact string, mono bool) string {
-	prefix := fmt.Sprintf("Godot_v%s-stable_", release.Version)
-	if mono {
-		prefix = fmt.Sprintf("Godot_v%s-stable_mono_", release.Version)
-	}
-
-	for name := range release.Assets {
-		if strings.HasPrefix(name, prefix) && strings.Contains(name, platformArtifact) && !strings.Contains(name, "export_templates") {
-			return name
-		}
-	}
-	return prefix + platformArtifact + ".zip"
-}
-
 func findChecksum(checksumFile string, artifactName string) string {
 	data, err := os.ReadFile(checksumFile)
 	if err != nil {

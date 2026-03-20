@@ -18,8 +18,12 @@ func newTemplatesCmd(app *App) *cobra.Command {
 		Short: "Manage export templates",
 	}
 
-	installCmd := newTemplatesInstallCmd(app)
-	listCmd := &cobra.Command{
+	cmd.AddCommand(newTemplatesInstallCmd(app), newTemplatesListCmd(app))
+	return cmd
+}
+
+func newTemplatesListCmd(app *App) *cobra.Command {
+	return &cobra.Command{
 		Use:   "list",
 		Short: "List installed templates",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -28,7 +32,8 @@ func newTemplatesCmd(app *App) *cobra.Command {
 				return err
 			}
 			if len(list) == 0 {
-				fmt.Fprintln(os.Stderr, "No templates installed\n\n  gdt templates install <version>")
+				fmt.Fprintln(os.Stderr, "No templates installed")
+				fmt.Fprintln(os.Stderr, "\n  gdt templates install <version>")
 				return nil
 			}
 			fmt.Println("Installed templates")
@@ -38,9 +43,6 @@ func newTemplatesCmd(app *App) *cobra.Command {
 			return nil
 		},
 	}
-
-	cmd.AddCommand(installCmd, listCmd)
-	return cmd
 }
 
 func newTemplatesInstallCmd(app *App) *cobra.Command {
@@ -48,11 +50,25 @@ func newTemplatesInstallCmd(app *App) *cobra.Command {
 	var refresh bool
 
 	cmd := &cobra.Command{
-		Use:   "install <version>",
+		Use:   "install [version]",
 		Short: "Install export templates",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runTemplatesInstall(app, args[0], mono, refresh)
+			query := ""
+			if len(args) > 0 {
+				query = args[0]
+			}
+			if query == "" && isTTY() {
+				v, err := promptVersion(app, "Install templates for version")
+				if err != nil {
+					return err
+				}
+				query = v
+			}
+			if query == "" {
+				return fmt.Errorf("version required\n\n  gdt templates install <version>")
+			}
+			return runTemplatesInstall(app, query, mono, refresh)
 		},
 	}
 
@@ -77,7 +93,7 @@ func runTemplatesInstall(app *App, query string, mono bool, refresh bool) error 
 		versionName += "-mono"
 	}
 
-	artifactName := templates.ArtifactName(release.Version, mono)
+	artifactName := metadata.TemplateArtifactName(release.Version, mono)
 	downloadURL, ok := release.Assets[artifactName]
 	if !ok {
 		for name, url := range release.Assets {

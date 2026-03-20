@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/monkeymonk/gdt/internal/desktop"
 	"github.com/monkeymonk/gdt/internal/download"
 	"github.com/monkeymonk/gdt/internal/metadata"
 	"github.com/monkeymonk/gdt/internal/versions"
@@ -17,11 +18,37 @@ func newInstallCmd(app *App) *cobra.Command {
 	var refresh bool
 
 	cmd := &cobra.Command{
-		Use:   "install <version>",
+		Use:   "install [version]",
 		Short: "Install a Godot engine version",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runInstall(app, args[0], mono, force, refresh)
+			query := ""
+			if len(args) > 0 {
+				query = args[0]
+			}
+			if query == "" {
+				// Try .godot-version file first
+				cwd, _ := os.Getwd()
+				ver, err := versions.ResolveFromFile(cwd)
+				if err == nil && ver != "" {
+					query = ver
+				}
+			}
+			if query == "" && isTTY() {
+				releases, err := loadMetadata(app, refresh)
+				if err != nil {
+					return err
+				}
+				selected, err := promptRemoteVersion(releases)
+				if err != nil {
+					return err
+				}
+				query = selected
+			}
+			if query == "" {
+				return fmt.Errorf("version required\n\n  gdt install <version>\n  gdt ls-remote")
+			}
+			return runInstall(app, query, mono, force, refresh)
 		},
 	}
 
@@ -53,7 +80,10 @@ func runInstall(app *App, query string, mono bool, force bool, refresh bool) err
 		return nil
 	}
 
-	artifactName := resolveEngineArtifact(release, app.Platform.ArtifactName(), mono)
+	artifactName, err := metadata.ResolveEngineArtifact(release, app.Platform, mono)
+	if err != nil {
+		return err
+	}
 	downloadURL, ok := release.Assets[artifactName]
 	if !ok {
 		return fmt.Errorf("artifact %q not found for version %s", artifactName, release.Version)
@@ -93,6 +123,17 @@ func runInstall(app *App, query string, mono bool, force bool, refresh bool) err
 	}
 
 	fmt.Fprintf(os.Stderr, "Godot %s installed\n", versionName)
+
+	// Create/update desktop launcher (Linux only, best-effort)
+	if !desktop.IsInstalled() {
+		gdtBin := desktop.GdtBinaryPath()
+		if iconPath, err := desktop.InstallIcon(app.Home); err == nil {
+			if err := desktop.Install(gdtBin, iconPath); err == nil {
+				fmt.Fprintln(os.Stderr, "  desktop launcher created")
+			}
+		}
+	}
+
 	fmt.Fprintf(os.Stderr, "\n  Hint: install export templates with: gdt templates install %s\n", release.Version)
 	return nil
 }
