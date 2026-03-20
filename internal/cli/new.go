@@ -7,7 +7,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/monkeymonk/gdt/internal/engine"
-	"github.com/monkeymonk/gdt/internal/scaffold"
+	"github.com/monkeymonk/gdt/internal/project"
 	"github.com/spf13/cobra"
 )
 
@@ -119,14 +119,14 @@ func runNew(app *App, name string, templateURL string, version string, renderer 
 
 	if templateURL != "" {
 		fmt.Fprintf(os.Stderr, "Creating project from template...\n")
-		if err := scaffold.CloneTemplate(templateURL, projectDir, version); err != nil {
+		if err := project.CloneTemplate(templateURL, projectDir, version); err != nil {
 			return err
 		}
 	} else {
 		if renderer == "" {
 			renderer = "forward_plus"
 		}
-		if err := scaffold.Generate(scaffold.Options{
+		if err := project.Generate(project.ScaffoldOptions{
 			Name:     name,
 			Version:  version,
 			Renderer: renderer,
