@@ -22,9 +22,22 @@ func File(ctx context.Context, url string, dest string, opts DownloadOpts) error
 		return err
 	}
 
+	partialPath := dest + ".partial"
+	var offset int64
+
+	if opts.Resume {
+		if info, err := os.Stat(partialPath); err == nil {
+			offset = info.Size()
+		}
+	}
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return err
+	}
+
+	if opts.Resume && offset > 0 {
+		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
 	}
 
 	resp, err := http.DefaultClient.Do(req)
@@ -33,18 +46,36 @@ func File(ctx context.Context, url string, dest string, opts DownloadOpts) error
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
-	}
+	var f *os.File
 
-	f, err := os.Create(dest)
-	if err != nil {
-		return err
+	switch {
+	case opts.Resume && resp.StatusCode == http.StatusPartialContent:
+		// Server supports range; append to partial file.
+		f, err = os.OpenFile(partialPath, os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return err
+		}
+	case resp.StatusCode == http.StatusOK:
+		// Full response — start fresh.
+		offset = 0
+		if opts.Resume {
+			f, err = os.Create(partialPath)
+		} else {
+			f, err = os.Create(dest)
+		}
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
 	}
 	defer f.Close()
 
 	total, _ := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
-	written := int64(0)
+	if total > 0 && resp.StatusCode == http.StatusPartialContent {
+		total += offset // Content-Length in 206 is remaining bytes
+	}
+	written := offset
 	buf := make([]byte, 32*1024)
 
 	for {
@@ -67,5 +98,9 @@ func File(ctx context.Context, url string, dest string, opts DownloadOpts) error
 		}
 	}
 	fmt.Fprintln(os.Stderr)
+
+	if opts.Resume {
+		return os.Rename(partialPath, dest)
+	}
 	return nil
 }

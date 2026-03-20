@@ -38,6 +38,81 @@ func TestDownloadFile(t *testing.T) {
 	}
 }
 
+func TestDownloadFileResume(t *testing.T) {
+	content := []byte("0123456789abcdefghij") // 20 bytes
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rangeHeader := r.Header.Get("Range")
+		if rangeHeader != "" {
+			var start int64
+			fmt.Sscanf(rangeHeader, "bytes=%d-", &start)
+			if start >= int64(len(content)) {
+				w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
+				return
+			}
+			w.Header().Set("Content-Length", fmt.Sprintf("%d", int64(len(content))-start))
+			w.WriteHeader(http.StatusPartialContent)
+			w.Write(content[start:])
+			return
+		}
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(content)))
+		w.Write(content)
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	dest := filepath.Join(dir, "resumed.bin")
+	partialPath := dest + ".partial"
+
+	// Write first 10 bytes as partial file.
+	if err := os.WriteFile(partialPath, content[:10], 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := File(context.Background(), srv.URL+"/file.bin", dest, DownloadOpts{Resume: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != string(content) {
+		t.Errorf("content mismatch: got %q, want %q", data, content)
+	}
+
+	// Partial file should be gone after rename.
+	if _, err := os.Stat(partialPath); !os.IsNotExist(err) {
+		t.Error("partial file should have been removed")
+	}
+}
+
+func TestDownloadFileResumeNoPartial(t *testing.T) {
+	content := []byte("full download content")
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(content)))
+		w.Write(content)
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	dest := filepath.Join(dir, "fresh.bin")
+
+	// Resume=true but no partial file exists — should do full download.
+	err := File(context.Background(), srv.URL+"/file.bin", dest, DownloadOpts{Resume: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != string(content) {
+		t.Errorf("content mismatch: got %q, want %q", data, content)
+	}
+}
+
 func TestVerifyChecksum(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "file.bin")
