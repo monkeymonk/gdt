@@ -117,7 +117,12 @@ func runNew(app *App, name string, templateURL string, version string, renderer 
 
 	projectDir := filepath.Join(".", name)
 
-	if templateURL != "" {
+	if templateURL == "2d" || templateURL == "3d" {
+		fmt.Fprintf(os.Stderr, "Creating %s project from built-in template...\n", templateURL)
+		if err := project.GenerateFromTemplate(templateURL, projectDir, name, version); err != nil {
+			return err
+		}
+	} else if templateURL != "" {
 		fmt.Fprintf(os.Stderr, "Creating project from template...\n")
 		if err := project.CloneTemplate(templateURL, projectDir, version); err != nil {
 			return err
