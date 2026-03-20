@@ -2,6 +2,7 @@ package download
 
 import (
 	"archive/zip"
+	"context"
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
@@ -23,7 +24,7 @@ func TestDownloadFile(t *testing.T) {
 	dir := t.TempDir()
 	dest := filepath.Join(dir, "test.zip")
 
-	err := File(srv.URL+"/test.zip", dest)
+	err := File(context.Background(), srv.URL+"/test.zip", dest, DownloadOpts{})
 	if err != nil {
 		t.Fatal(err)
 	}

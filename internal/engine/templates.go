@@ -38,7 +38,7 @@ func (s *Service) TemplatesInstalled(version string) bool {
 }
 
 // InstallTemplates downloads and extracts export templates for the given version.
-func (s *Service) InstallTemplates(_ context.Context, query string, opts InstallOpts) (*InstallResult, error) {
+func (s *Service) InstallTemplates(ctx context.Context, query string, opts InstallOpts) (*InstallResult, error) {
 	apiURL := "https://api.github.com/repos/godotengine/godot/releases"
 	token := os.Getenv("GDT_GITHUB_TOKEN")
 
@@ -93,7 +93,7 @@ func (s *Service) InstallTemplates(_ context.Context, query string, opts Install
 	downloadDir := filepath.Join(s.cacheDir(), "downloads")
 	archivePath := filepath.Join(downloadDir, artifactName)
 
-	if err := download.File(downloadURL, archivePath); err != nil {
+	if err := download.File(ctx, downloadURL, archivePath, download.DownloadOpts{}); err != nil {
 		return nil, fmt.Errorf("download failed: %w", err)
 	}
 

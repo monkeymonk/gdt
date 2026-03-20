@@ -50,7 +50,7 @@ func Update(ctx context.Context, currentVersion string) (*Result, error) {
 	}
 
 	tmpPath := exe + ".new"
-	if err := download.File(downloadURL, tmpPath); err != nil {
+	if err := download.File(ctx, downloadURL, tmpPath, download.DownloadOpts{}); err != nil {
 		return nil, fmt.Errorf("download update: %w", err)
 	}
 
