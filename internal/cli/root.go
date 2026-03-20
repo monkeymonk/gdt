@@ -93,12 +93,12 @@ func dispatchPlugin(app *App, p plugins.Plugin, args []string) {
 	svc := engine.NewService(app.Home, app.Platform, app.Config)
 	resolved, _ := svc.Resolve(cwd)
 
-	cmd.Env = append(os.Environ(),
-		"GDT_HOME="+app.Home,
-		"GDT_PROJECT_ROOT="+projectRoot,
-		"GDT_GODOT_VERSION="+resolved.Version,
-		"GDT_ENGINE_PATH="+resolved.BinaryPath,
-	)
+	cmd.Env = append(os.Environ(), plugins.BuildEnv(plugins.EnvContext{
+		Home:         app.Home,
+		ProjectRoot:  projectRoot,
+		GodotVersion: resolved.Version,
+		EnginePath:   resolved.BinaryPath,
+	})...)
 
 	cmd.Run()
 }
