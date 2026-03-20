@@ -1,4 +1,4 @@
-package scaffold
+package project
 
 import (
 	"crypto/rand"
@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-type Options struct {
+type ScaffoldOptions struct {
 	Name     string
 	Version  string
 	Renderer string
@@ -17,7 +17,7 @@ type Options struct {
 	CSharp   bool
 }
 
-func Generate(opts Options) error {
+func Generate(opts ScaffoldOptions) error {
 	if _, err := os.Stat(filepath.Join(opts.Dir, "project.godot")); err == nil {
 		return fmt.Errorf("project.godot already exists in %s", opts.Dir)
 	}
@@ -65,10 +65,10 @@ func CloneTemplate(repoURL string, destDir string, version string) error {
 
 	os.RemoveAll(filepath.Join(destDir, ".git"))
 
-	return writeGodotVersion(Options{Version: version, Dir: destDir})
+	return writeGodotVersion(ScaffoldOptions{Version: version, Dir: destDir})
 }
 
-func writeProjectGodot(opts Options) error {
+func writeProjectGodot(opts ScaffoldOptions) error {
 	content := fmt.Sprintf(`; Engine configuration file.
 ; It's best edited using the editor UI and not directly,
 ; since the parameters that go here are not all obvious.
@@ -92,7 +92,7 @@ renderer/rendering_method="%s"
 	return os.WriteFile(filepath.Join(opts.Dir, "project.godot"), []byte(content), 0644)
 }
 
-func writeGodotVersion(opts Options) error {
+func writeGodotVersion(opts ScaffoldOptions) error {
 	version := opts.Version
 	if opts.CSharp && !strings.HasSuffix(version, "-mono") {
 		version += "-mono"
@@ -100,7 +100,7 @@ func writeGodotVersion(opts Options) error {
 	return os.WriteFile(filepath.Join(opts.Dir, ".godot-version"), []byte(version+"\n"), 0644)
 }
 
-func writeGitIgnore(opts Options) error {
+func writeGitIgnore(opts ScaffoldOptions) error {
 	content := `# Godot
 .godot/
 *.import
@@ -133,7 +133,7 @@ obj/
 	return os.WriteFile(filepath.Join(opts.Dir, ".gitignore"), []byte(content), 0644)
 }
 
-func writeEditorConfig(opts Options) error {
+func writeEditorConfig(opts ScaffoldOptions) error {
 	content := `root = true
 
 [*]
@@ -158,7 +158,7 @@ trim_trailing_whitespace = false
 	return os.WriteFile(filepath.Join(opts.Dir, ".editorconfig"), []byte(content), 0644)
 }
 
-func writeCSharpFiles(opts Options) error {
+func writeCSharpFiles(opts ScaffoldOptions) error {
 	projectGUID := newGUID()
 	slnGUID := newGUID()
 

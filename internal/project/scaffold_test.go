@@ -1,4 +1,4 @@
-package scaffold
+package project
 
 import (
 	"os"
@@ -12,7 +12,7 @@ func TestGenerateProject(t *testing.T) {
 	dir := t.TempDir()
 	projectDir := filepath.Join(dir, "mygame")
 
-	opts := Options{
+	opts := ScaffoldOptions{
 		Name:     "mygame",
 		Version:  "4.3",
 		Renderer: "forward_plus",
@@ -63,7 +63,7 @@ func TestGenerateProjectAlreadyExists(t *testing.T) {
 	os.MkdirAll(projectDir, 0755)
 	os.WriteFile(filepath.Join(projectDir, "project.godot"), []byte("exists"), 0644)
 
-	opts := Options{
+	opts := ScaffoldOptions{
 		Name:     "existing",
 		Version:  "4.3",
 		Renderer: "forward_plus",
@@ -83,7 +83,7 @@ func TestGenerateRenderers(t *testing.T) {
 			dir := t.TempDir()
 			projectDir := filepath.Join(dir, "game")
 
-			err := Generate(Options{
+			err := Generate(ScaffoldOptions{
 				Name:     "game",
 				Version:  "4.3",
 				Renderer: r,
@@ -105,7 +105,7 @@ func TestGitIgnoreContent(t *testing.T) {
 	dir := t.TempDir()
 	projectDir := filepath.Join(dir, "game")
 
-	Generate(Options{Name: "game", Version: "4.3", Renderer: "forward_plus", Dir: projectDir})
+	Generate(ScaffoldOptions{Name: "game", Version: "4.3", Renderer: "forward_plus", Dir: projectDir})
 
 	data, _ := os.ReadFile(filepath.Join(projectDir, ".gitignore"))
 	content := string(data)
@@ -121,7 +121,7 @@ func TestGenerateCSharpProject(t *testing.T) {
 	dir := t.TempDir()
 	projectDir := filepath.Join(dir, "mygame")
 
-	opts := Options{
+	opts := ScaffoldOptions{
 		Name:     "mygame",
 		Version:  "4.3",
 		Renderer: "forward_plus",
@@ -174,7 +174,7 @@ func TestGenerateCSharpAlreadyMono(t *testing.T) {
 	dir := t.TempDir()
 	projectDir := filepath.Join(dir, "mygame")
 
-	err := Generate(Options{
+	err := Generate(ScaffoldOptions{
 		Name:     "mygame",
 		Version:  "4.3-mono",
 		Renderer: "forward_plus",
