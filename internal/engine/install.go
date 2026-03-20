@@ -66,8 +66,12 @@ func (s *Service) Install(ctx context.Context, version string, opts InstallOpts)
 	}
 
 	// 7. Download engine artifact
+	dlOpts := download.DownloadOpts{
+		Resume:  true,
+		Mirrors: s.Config.Mirrors,
+	}
 	archivePath := filepath.Join(downloadDir, artifactName)
-	if err := download.File(ctx, downloadURL, archivePath, download.DownloadOpts{}); err != nil {
+	if err := download.File(ctx, downloadURL, archivePath, dlOpts); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDownloadFailed, err)
 	}
 
