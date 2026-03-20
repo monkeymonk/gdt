@@ -9,7 +9,8 @@ import (
 )
 
 type Config struct {
-	DefaultVersion string `toml:"default_version"`
+	DefaultVersion string   `toml:"default_version"`
+	Mirrors        []string `toml:"mirrors,omitempty"`
 }
 
 func Load(path string) (*Config, error) {
