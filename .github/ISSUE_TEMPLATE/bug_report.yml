@@ -1,0 +1,75 @@
+name: Bug Report
+description: Report a bug in gdt
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Please fill out the details below.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal steps to reproduce the issue.
+      placeholder: |
+        1. Run `gdt install 4.3`
+        2. Run `gdt new mygame --version 4.3`
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Doctor Output
+      description: Paste the output of `gdt doctor`.
+      render: text
+    validations:
+      required: false
+
+  - type: input
+    id: gdt-version
+    attributes:
+      label: gdt Version
+      description: Output of `gdt --version`.
+      placeholder: "gdt 1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Linux
+        - macOS
+        - Windows
+    validations:
+      required: true
+
+  - type: input
+    id: godot-version
+    attributes:
+      label: Godot Version
+      description: Which Godot version were you using?
+      placeholder: "4.3"
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Additional Logs
+      description: Any relevant logs or error output. Run with `GDT_DEBUG=1` for verbose output.
+      render: text
+    validations:
+      required: false

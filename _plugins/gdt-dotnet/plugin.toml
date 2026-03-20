@@ -1,0 +1,5 @@
+name = "dotnet"
+version = "0.1.0"
+commands = ["dotnet"]
+requires_gdt = ">=1.0"
+description = "C# and .NET tooling for Godot projects"

@@ -61,6 +61,10 @@ func ResolveEngineArtifact(release *Release, plat platform.Info, mono bool) (str
 
 	for name := range release.Assets {
 		if strings.HasPrefix(name, prefix) && strings.Contains(name, platStr) && !strings.Contains(name, "export_templates") {
+			// For non-mono searches, exclude mono artifacts
+			if !mono && strings.Contains(name, "_mono_") {
+				continue
+			}
 			return name, nil
 		}
 	}

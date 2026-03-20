@@ -1,0 +1,5 @@
+name = "git"
+version = "0.1.0"
+commands = ["git"]
+requires_gdt = ">=1.0"
+description = "Git workflow utilities for Godot projects"

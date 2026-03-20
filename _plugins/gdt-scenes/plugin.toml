@@ -1,0 +1,5 @@
+name = "scenes"
+version = "0.1.0"
+commands = ["scenes"]
+requires_gdt = ">=1.0"
+description = "Scene graph inspection tools for Godot projects"
