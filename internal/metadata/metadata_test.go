@@ -11,22 +11,22 @@ import (
 
 func fakeGitHubServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	releases := []ghRelease{
+	releases := []GitHubRelease{
 		{
 			TagName: "4.3-stable",
-			Assets: []ghAsset{
-				{Name: "Godot_v4.3-stable_linux.x86_64.zip", BrowserDownloadURL: "http://example.com/linux.zip"},
-				{Name: "Godot_v4.3-stable_mono_linux_x86_64.zip", BrowserDownloadURL: "http://example.com/linux_mono.zip"},
-				{Name: "Godot_v4.3-stable_macos.universal.zip", BrowserDownloadURL: "http://example.com/macos.zip"},
-				{Name: "Godot_v4.3-stable_win64.exe.zip", BrowserDownloadURL: "http://example.com/win.zip"},
-				{Name: "Godot_v4.3-stable_export_templates.tpz", BrowserDownloadURL: "http://example.com/templates.zip"},
-				{Name: "SHA512-SUMS.txt", BrowserDownloadURL: "http://example.com/sha512.txt"},
+			Assets: []GitHubAsset{
+				{Name: "Godot_v4.3-stable_linux.x86_64.zip", URL: "http://example.com/linux.zip"},
+				{Name: "Godot_v4.3-stable_mono_linux_x86_64.zip", URL: "http://example.com/linux_mono.zip"},
+				{Name: "Godot_v4.3-stable_macos.universal.zip", URL: "http://example.com/macos.zip"},
+				{Name: "Godot_v4.3-stable_win64.exe.zip", URL: "http://example.com/win.zip"},
+				{Name: "Godot_v4.3-stable_export_templates.tpz", URL: "http://example.com/templates.zip"},
+				{Name: "SHA512-SUMS.txt", URL: "http://example.com/sha512.txt"},
 			},
 		},
 		{
 			TagName: "4.2.2-stable",
-			Assets: []ghAsset{
-				{Name: "Godot_v4.2.2-stable_linux.x86_64.zip", BrowserDownloadURL: "http://example.com/linux422.zip"},
+			Assets: []GitHubAsset{
+				{Name: "Godot_v4.2.2-stable_linux.x86_64.zip", URL: "http://example.com/linux422.zip"},
 			},
 		},
 	}
