@@ -72,9 +72,9 @@ func runDoctor(app *App) error {
 
 	cwd, _ := os.Getwd()
 	if root, err := project.DetectRoot(cwd); err == nil {
+		resolved, _ := svc.Resolve(cwd)
 		hasCSharp, _ := project.HasCSharp(root)
 		if hasCSharp {
-			resolved, _ := svc.Resolve(cwd)
 			ver := resolved.Version
 			if ver != "" && !strings.HasSuffix(ver, "-mono") {
 				fmt.Println("  WARN  project uses C# but mono engine not installed")
@@ -83,6 +83,15 @@ func runDoctor(app *App) error {
 				issues++
 			} else if ver != "" {
 				fmt.Println("  ok  C# project with mono engine")
+			}
+		}
+
+		presets, presetsErr := project.ParsePresets(root)
+		if presetsErr == nil && len(presets) > 0 {
+			if !svc.TemplatesInstalled(resolved.Version) {
+				issues++
+				fmt.Printf("  [!] export presets found but no templates installed for %s\n", resolved.Version)
+				fmt.Printf("      fix: gdt templates install %s\n", resolved.Version)
 			}
 		}
 	}
