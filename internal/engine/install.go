@@ -13,7 +13,7 @@ import (
 const apiURL = "https://api.github.com/repos/godotengine/godot/releases"
 
 // Install downloads and installs a Godot engine version.
-func (s *Service) Install(_ context.Context, version string, opts InstallOpts) (*InstallResult, error) {
+func (s *Service) Install(ctx context.Context, version string, opts InstallOpts) (*InstallResult, error) {
 	token := os.Getenv("GDT_GITHUB_TOKEN")
 
 	// 1. Load releases
@@ -58,7 +58,7 @@ func (s *Service) Install(_ context.Context, version string, opts InstallOpts) (
 	var expectedChecksum string
 	if checksumURL, ok := release.Assets["SHA512-SUMS.txt"]; ok {
 		checksumPath := filepath.Join(downloadDir, "SHA512-SUMS.txt")
-		if err := download.File(checksumURL, checksumPath); err == nil {
+		if err := download.File(ctx, checksumURL, checksumPath, download.DownloadOpts{}); err == nil {
 			if data, err := os.ReadFile(checksumPath); err == nil {
 				expectedChecksum = metadata.FindChecksum(string(data), artifactName)
 			}
@@ -67,7 +67,7 @@ func (s *Service) Install(_ context.Context, version string, opts InstallOpts) (
 
 	// 7. Download engine artifact
 	archivePath := filepath.Join(downloadDir, artifactName)
-	if err := download.File(downloadURL, archivePath); err != nil {
+	if err := download.File(ctx, downloadURL, archivePath, download.DownloadOpts{}); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDownloadFailed, err)
 	}
 
