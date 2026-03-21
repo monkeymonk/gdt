@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/spf13/cobra"
@@ -73,7 +74,23 @@ func newPluginListCmd(app *App) *cobra.Command {
 			}
 			fmt.Println("Installed plugins")
 			for _, p := range pluginList {
-				fmt.Printf("  %s v%s\n", p.Manifest.Name, p.Manifest.Version)
+				line := fmt.Sprintf("  %s v%s", p.Manifest.Name, p.Manifest.Version)
+				if p.Manifest.HasContributions() {
+					var contribs []string
+					if len(p.Manifest.Contributions.Templates) > 0 {
+						contribs = append(contribs, fmt.Sprintf("%d templates", len(p.Manifest.Contributions.Templates)))
+					}
+					if len(p.Manifest.Contributions.Presets) > 0 {
+						contribs = append(contribs, fmt.Sprintf("%d presets", len(p.Manifest.Contributions.Presets)))
+					}
+					if p.Manifest.Contributions.Doctor {
+						contribs = append(contribs, "doctor")
+					}
+					if len(contribs) > 0 {
+						line += " (" + strings.Join(contribs, ", ") + ")"
+					}
+				}
+				fmt.Println(line)
 			}
 			return nil
 		},
@@ -117,7 +134,9 @@ func newPluginUpdateCmd(app *App) *cobra.Command {
 }
 
 func newPluginNewCmd(app *App) *cobra.Command {
-	return &cobra.Command{
+	var lang string
+
+	cmd := &cobra.Command{
 		Use:   "new [name]",
 		Short: "Scaffold a new plugin",
 		Args:  cobra.MaximumNArgs(1),
@@ -137,7 +156,7 @@ func newPluginNewCmd(app *App) *cobra.Command {
 				return fmt.Errorf("name required\n\n  gdt plugin new <name>")
 			}
 			svc := plugins.NewService(app.PluginsDir())
-			dir, err := svc.Scaffold(name)
+			dir, err := svc.ScaffoldV2(plugins.ScaffoldOptions{Name: name, Lang: lang})
 			if err != nil {
 				return err
 			}
@@ -146,6 +165,9 @@ func newPluginNewCmd(app *App) *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&lang, "lang", "shell", "Scaffold language: shell, go")
+	return cmd
 }
 
 func newPluginRemoveCmd(app *App) *cobra.Command {
