@@ -37,6 +37,18 @@ func (s *Service) TemplatesInstalled(version string) bool {
 	return err == nil
 }
 
+// RemoveTemplates deletes installed export templates for the given version.
+func (s *Service) RemoveTemplates(version string) error {
+	dir := filepath.Join(s.templatesDir(), version)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return &ActionableError{
+			Err:        fmt.Errorf("templates for %s are not installed", version),
+			Suggestion: "gdt templates list",
+		}
+	}
+	return os.RemoveAll(dir)
+}
+
 // InstallTemplates downloads and extracts export templates for the given version.
 func (s *Service) InstallTemplates(ctx context.Context, query string, opts InstallOpts) (*InstallResult, error) {
 	apiURL := "https://api.github.com/repos/godotengine/godot/releases"

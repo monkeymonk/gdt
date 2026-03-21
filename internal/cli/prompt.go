@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/metadata"
+	"github.com/monkeymonk/gdt/internal/plugins"
 )
 
 // promptVersion prompts the user to select from installed versions.
@@ -75,6 +76,61 @@ func promptPreset(presets []string) (string, error) {
 		Value(&preset).
 		Run()
 	return preset, err
+}
+
+// promptInstalledTemplate prompts the user to select from installed templates.
+func promptInstalledTemplate(app *App, title string) (string, error) {
+	svc := engine.NewService(app.Home, app.Platform, app.Config)
+	list, _ := svc.ListTemplates()
+	if len(list) == 0 {
+		return "", nil
+	}
+
+	var version string
+	options := make([]huh.Option[string], len(list))
+	for i, v := range list {
+		options[i] = huh.NewOption(v, v)
+	}
+
+	err := huh.NewSelect[string]().
+		Title(title).
+		Options(options...).
+		Value(&version).
+		Run()
+	return version, err
+}
+
+// promptInput prompts the user for a text value.
+func promptInput(title string, placeholder string) (string, error) {
+	var value string
+	err := huh.NewInput().
+		Title(title).
+		Placeholder(placeholder).
+		Value(&value).
+		Run()
+	return value, err
+}
+
+// promptInstalledPlugin prompts the user to select from installed plugins.
+func promptInstalledPlugin(app *App, title string) (string, error) {
+	svc := plugins.NewService(app.PluginsDir())
+	pluginList, _ := svc.Discover()
+	if len(pluginList) == 0 {
+		return "", nil
+	}
+
+	var name string
+	options := make([]huh.Option[string], len(pluginList))
+	for i, p := range pluginList {
+		options[i] = huh.NewOption(p.Manifest.Name, p.Manifest.Name)
+	}
+
+	err := huh.NewSelect[string]().
+		Title(title).
+		Options(options...).
+		Value(&name).
+		Run()
+	return name, err
 }
 
 // isTTY returns true if stdin is a terminal (interactive mode possible).

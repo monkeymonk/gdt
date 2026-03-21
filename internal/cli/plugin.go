@@ -27,13 +27,27 @@ func newPluginCmd(app *App) *cobra.Command {
 
 func newPluginInstallCmd(app *App) *cobra.Command {
 	return &cobra.Command{
-		Use:   "install <repository>",
+		Use:   "install [repository]",
 		Short: "Install a plugin from a Git repository",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			repo := ""
+			if len(args) > 0 {
+				repo = args[0]
+			}
+			if repo == "" && isTTY() {
+				v, err := promptInput("Plugin repository", "user/repo or https://...")
+				if err != nil {
+					return err
+				}
+				repo = v
+			}
+			if repo == "" {
+				return fmt.Errorf("repository required\n\n  gdt plugin install <repository>")
+			}
 			svc := plugins.NewService(app.PluginsDir())
 			fmt.Fprintf(os.Stderr, "Installing plugin...\n")
-			m, err := svc.Install(args[0])
+			m, err := svc.Install(repo)
 			if err != nil {
 				return err
 			}
@@ -104,12 +118,26 @@ func newPluginUpdateCmd(app *App) *cobra.Command {
 
 func newPluginNewCmd(app *App) *cobra.Command {
 	return &cobra.Command{
-		Use:   "new <name>",
+		Use:   "new [name]",
 		Short: "Scaffold a new plugin",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			name := ""
+			if len(args) > 0 {
+				name = args[0]
+			}
+			if name == "" && isTTY() {
+				v, err := promptInput("Plugin name", "gdt-my-plugin")
+				if err != nil {
+					return err
+				}
+				name = v
+			}
+			if name == "" {
+				return fmt.Errorf("name required\n\n  gdt plugin new <name>")
+			}
 			svc := plugins.NewService(app.PluginsDir())
-			dir, err := svc.Scaffold(args[0])
+			dir, err := svc.Scaffold(name)
 			if err != nil {
 				return err
 			}
@@ -122,12 +150,35 @@ func newPluginNewCmd(app *App) *cobra.Command {
 
 func newPluginRemoveCmd(app *App) *cobra.Command {
 	return &cobra.Command{
-		Use:   "remove <name>",
+		Use:   "remove [name]",
 		Short: "Remove a plugin",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			name := ""
+			if len(args) > 0 {
+				name = args[0]
+			}
+			if name == "" && isTTY() {
+				v, err := promptInstalledPlugin(app, "Plugin to remove")
+				if err != nil {
+					return err
+				}
+				name = v
+			}
+			if name == "" {
+				return fmt.Errorf("name required\n\n  gdt plugin remove <name>")
+			}
+			if isTTY() {
+				ok, err := promptConfirm(fmt.Sprintf("Remove plugin %s?", name))
+				if err != nil {
+					return err
+				}
+				if !ok {
+					fmt.Fprintln(os.Stderr, "Aborted")
+					return nil
+				}
+			}
 			svc := plugins.NewService(app.PluginsDir())
-			name := args[0]
 			if err := svc.Remove(name); err != nil {
 				return err
 			}
