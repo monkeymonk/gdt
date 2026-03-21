@@ -12,13 +12,15 @@ A cross-platform CLI to manage Godot Engine installations, scaffold projects, pr
 - Install and manage multiple Godot engine versions
 - Standard and Mono/C# build support
 - Deterministic per-project version pinning (`.godot-version`)
-- Transparent shim system — just run `godot`
-- Project scaffolding with interactive prompts
-- LSP and DAP proxy for Neovim, Helix, and other editors
-- Export automation with preset management
+- Optional `godot` alias — `alias godot="gdt run"`
+- Project scaffolding with built-in templates (2D, 3D) and interactive prompts
+- LSP and DAP proxy for editors and AI coding tools
+- Export automation with preset management and plugin hooks
 - CI pipeline generation (GitHub Actions, GitLab CI, shell script)
 - Export template management
-- Plugin ecosystem for extensibility
+- Plugin ecosystem with lifecycle hooks
+- Download resume and mirror fallback support
+- SHA-256 checksum verification for all downloads
 - Diagnostic tooling (`gdt doctor`)
 - Shell completion (bash, zsh, fish, powershell)
 - Desktop launcher integration (Linux)
@@ -45,11 +47,14 @@ go install github.com/monkeymonk/gdt/cmd/gdt@latest
 
 ## Shell Setup
 
-Add the shim directory to your PATH:
+Add gdt to your PATH:
 
 ```sh
 # Add to your .bashrc, .zshrc, etc.
 eval "$(gdt shell init)"
+
+# Optional: create a godot alias
+alias godot="gdt run"
 ```
 
 ## Quick Start
@@ -67,6 +72,10 @@ gdt new mygame --version 4.3 --renderer forward_plus
 # Create a C# project
 gdt new mygame --version 4.3 --renderer forward_plus --csharp
 
+# Create from a built-in template
+gdt new mygame --template 2d --version 4.3
+gdt new mygame --template 3d --version 4.3
+
 # Open the editor
 cd mygame
 gdt edit
@@ -77,8 +86,8 @@ gdt run
 # Pin a project to a specific version
 gdt local 4.2
 
-# Run Godot through the shim (resolves the right version automatically)
-godot .
+# With the alias, just run godot directly
+godot
 ```
 
 All commands with required parameters support interactive mode — run without arguments and gdt will prompt you.
@@ -113,17 +122,20 @@ Aliases: `remove` → `rm`, `uninstall`; `list` → `ls`
 | Command | Description |
 |---|---|
 | `gdt templates install [version]` | Install export templates |
+| `gdt templates remove [version]` | Remove installed export templates |
 | `gdt templates list` | List installed templates |
+
+Aliases: `remove` → `rm`
 
 ### Plugins
 
 | Command | Description |
 |---|---|
-| `gdt plugin install <repo>` | Install a plugin |
+| `gdt plugin install [repo]` | Install a plugin |
 | `gdt plugin list` | List installed plugins |
 | `gdt plugin update [name]` | Update plugins (all or by name) |
-| `gdt plugin remove <name>` | Remove a plugin |
-| `gdt plugin new <name>` | Scaffold a new plugin |
+| `gdt plugin remove [name]` | Remove a plugin |
+| `gdt plugin new [name]` | Scaffold a new plugin |
 
 ### Utilities
 
@@ -152,6 +164,8 @@ gdt install [version]
 | `--mono` | Install Mono/C# build |
 | `--force` | Force reinstall even if already installed |
 | `--refresh` | Refresh metadata cache before resolving |
+
+Downloads are verified against SHA-256 checksums. Interrupted downloads are automatically resumed via HTTP Range requests. If the primary download URL is unavailable, configured mirrors are tried as fallbacks.
 
 When run without arguments: reads `.godot-version` if present, otherwise prompts interactively. On Linux, a desktop launcher is created on first install.
 
@@ -206,6 +220,8 @@ gdt export [preset]
 | `-v`, `--verbose` | Show Godot engine output |
 | `--list` | List available export presets |
 
+Plugin hooks (`before_export`, `after_export`) are executed automatically if any installed plugins define them.
+
 ### gdt ci setup
 
 ```sh
@@ -226,6 +242,14 @@ gdt templates install [version]
 |---|---|
 | `--mono` | Install Mono templates |
 | `--refresh` | Refresh metadata cache |
+
+### gdt templates remove
+
+```sh
+gdt templates remove [version]
+```
+
+Aliases: `rm`. Prompts for confirmation interactively.
 
 ### gdt lsp / dap
 
@@ -250,7 +274,7 @@ gdt new [name]
 | `--version` | Engine version to pin |
 | `--renderer` | `forward_plus`, `mobile`, `gl_compatibility` |
 | `--csharp` | Create a C# project (pins to mono build) |
-| `--template` | Clone from a template repository (`user/repo` or URL) |
+| `--template` | Built-in template (`2d`, `3d`) or git repo (`user/repo` or URL) |
 
 ### gdt completion
 
@@ -261,7 +285,9 @@ gdt completion fish
 gdt completion powershell
 ```
 
-Generate shell completion scripts. Example setup:
+Generate shell completion scripts. The install script offers to set up completions automatically.
+
+Manual setup:
 
 ```sh
 # Bash
@@ -290,6 +316,10 @@ gdt new mygame --version 4.3 --renderer forward_plus
 # C# project (pins to mono build)
 gdt new mygame --version 4.3 --renderer mobile --csharp
 
+# From a built-in template
+gdt new mygame --template 2d --version 4.3
+gdt new mygame --template 3d --version 4.3
+
 # From a template repository
 gdt new mygame --template user/repo --version 4.3
 gdt new mygame --template https://github.com/user/repo --version 4.3
@@ -316,7 +346,9 @@ mygame/
 
 The `.godot-version` file is set to `<version>-mono` for C# projects.
 
-**Template mode** (`--template`) clones the repository, removes `.git/`, and overwrites `.godot-version`.
+**Built-in templates** (`--template 2d` or `--template 3d`) scaffold a starter project with pre-configured scene files.
+
+**Git template mode** (`--template user/repo`) clones the repository, removes `.git/`, and overwrites `.godot-version`.
 
 ### Renderers
 
@@ -330,66 +362,7 @@ The `.godot-version` file is set to `<version>-mono` for C# projects.
 
 ## LSP and DAP Proxy
 
-gdt provides stdin/stdout to TCP proxies for editors that need them (Neovim, Helix, etc.). The proxy automatically starts Godot headless, connects to its TCP server, and bridges stdin/stdout.
-
-### Neovim LSP
-
-```lua
-require('lspconfig').gdscript.setup({
-  cmd = { 'gdt', 'lsp' },
-})
-
--- Custom port
-require('lspconfig').gdscript.setup({
-  cmd = { 'gdt', 'lsp', '--port', '6010' },
-})
-```
-
-### Neovim DAP
-
-```lua
-require('dap').adapters.godot = {
-  type = 'pipe',
-  pipe = { 'gdt', 'dap' },
-}
-
--- Custom port
-require('dap').adapters.godot = {
-  type = 'pipe',
-  pipe = { 'gdt', 'dap', '--port', '6011' },
-}
-
-require('dap').configurations.gdscript = {
-  {
-    type = 'godot',
-    request = 'launch',
-    name = 'Launch Godot',
-  },
-}
-```
-
-### Helix
-
-In `languages.toml`:
-
-```toml
-[language-server.gdscript]
-command = "gdt"
-args = ["lsp"]
-
-# Custom port
-# args = ["lsp", "--port", "6010"]
-```
-
-### VS Code
-
-VS Code connects directly to Godot's TCP server — no proxy needed:
-
-```json
-{
-  "gdscript.lsp.serverPort": 6005
-}
-```
+gdt provides stdin/stdout to TCP proxies that bridge to Godot's built-in language server and debugger. The proxy starts Godot headless, connects to its TCP port, and exposes a standard stdio interface — compatible with any tool that can spawn an LSP command.
 
 ### Default Ports
 
@@ -397,6 +370,131 @@ VS Code connects directly to Godot's TCP server — no proxy needed:
 |---|---|---|
 | LSP | 6005 | `--port` |
 | DAP | 6006 | `--port` |
+
+### Editors
+
+#### Neovim
+
+```lua
+-- LSP
+require('lspconfig').gdscript.setup({
+  cmd = { 'gdt', 'lsp' },
+  filetypes = { 'gdscript', 'gd' },
+  root_dir = require('lspconfig.util').root_pattern('project.godot'),
+})
+
+-- DAP
+require('dap').adapters.godot = {
+  type = 'pipe',
+  pipe = { 'gdt', 'dap' },
+}
+require('dap').configurations.gdscript = {
+  { type = 'godot', request = 'launch', name = 'Launch Godot' },
+}
+```
+
+#### Helix
+
+In `~/.config/helix/languages.toml`:
+
+```toml
+[[language]]
+name = "gdscript"
+language-servers = ["gdscript"]
+
+[language-server.gdscript]
+command = "gdt"
+args = ["lsp"]
+```
+
+#### VS Code
+
+Install the [godot-tools](https://marketplace.visualstudio.com/items?itemName=geequlim.godot-tools) extension, then in `.vscode/settings.json`:
+
+```json
+{
+  "gdscript.lsp.serverPort": 6005
+}
+```
+
+VS Code connects directly to Godot's TCP server — no proxy needed. Start Godot headless first: `gdt run --headless` or open the editor.
+
+#### Zed
+
+In Zed settings (`~/.config/zed/settings.json`):
+
+```json
+{
+  "lsp": {
+    "gdscript": {
+      "binary": { "path": "gdt", "arguments": ["lsp"] }
+    }
+  }
+}
+```
+
+#### Emacs (lsp-mode)
+
+```elisp
+(with-eval-after-load 'lsp-mode
+  (lsp-register-client
+   (make-lsp-client
+    :new-connection (lsp-stdio-connection '("gdt" "lsp"))
+    :major-modes '(gdscript-mode)
+    :server-id 'gdscript)))
+```
+
+### AI Coding Tools
+
+`gdt lsp` works as a standard stdio LSP server, making it compatible with AI coding assistants.
+
+#### Claude Code
+
+```sh
+claude mcp add godot-lsp --command gdt --args lsp
+```
+
+Or in `.mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "godot-lsp": {
+      "command": "gdt",
+      "args": ["lsp"]
+    }
+  }
+}
+```
+
+#### Codex
+
+In `codex.json` or equivalent config:
+
+```json
+{
+  "lsp": {
+    "gdscript": {
+      "command": ["gdt", "lsp"]
+    }
+  }
+}
+```
+
+#### Gemini CLI
+
+```json
+{
+  "lsp": {
+    "gdscript": {
+      "command": "gdt",
+      "args": ["lsp"]
+    }
+  }
+}
+```
+
+For any tool that supports spawning an LSP server via stdio, use `gdt lsp` as the command. Add `--port <N>` to change the Godot TCP port, or `-C <path>` to specify the project directory.
 
 ---
 
@@ -426,6 +524,18 @@ Export presets must be configured in the Godot editor first (`Project > Export`)
 By default, engine output is captured silently. On failure, captured stdout/stderr is included in the error message. Use `--verbose` (`-v`) to stream engine output in real-time.
 
 The default output directory is `dist/<preset-name>/`.
+
+### Plugin Hooks
+
+Plugins can hook into the export lifecycle:
+
+| Hook | Timing |
+|---|---|
+| `before_export` | Before Godot export starts |
+| `after_export` | After successful export |
+| `before_build` | Before a build step |
+
+See [Plugins](#plugins) for hook configuration.
 
 ---
 
@@ -497,7 +607,14 @@ Configuration file: `~/.gdt/config.toml`
 
 ```toml
 default_version = "4.3"
+mirrors = [
+  "https://mirror.example.com/godot/releases",
+]
 ```
+
+### Mirrors
+
+When the primary GitHub download URL is unavailable, gdt tries configured mirror URLs as fallbacks. Mirrors are checked with HEAD requests before downloading.
 
 ### Environment Variables
 
@@ -547,7 +664,26 @@ version = "0.1.0"
 commands = ["mytools"]
 requires_gdt = ">=1.0"
 description = "My custom tools"
+
+[hooks]
+before_export = "scripts/pre-export.sh"
+after_export = "scripts/post-export.sh"
 ```
+
+### Hooks
+
+Plugins can register shell commands for lifecycle events:
+
+| Event | Description |
+|---|---|
+| `before_export` | Runs before `gdt export` starts |
+| `after_export` | Runs after a successful export |
+| `before_build` | Runs before a build step |
+
+Hook exit codes:
+- **Exit 0**: Success
+- **Exit 2**: Fatal error — stops the operation
+- **Other non-zero**: Warning — logged but does not stop the operation
 
 ---
 

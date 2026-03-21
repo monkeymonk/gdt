@@ -15,7 +15,7 @@ func newTemplatesCmd(app *App) *cobra.Command {
 		Short: "Manage export templates",
 	}
 
-	cmd.AddCommand(newTemplatesInstallCmd(app), newTemplatesListCmd(app))
+	cmd.AddCommand(newTemplatesInstallCmd(app), newTemplatesListCmd(app), newTemplatesRemoveCmd(app))
 	return cmd
 }
 
@@ -38,6 +38,48 @@ func newTemplatesListCmd(app *App) *cobra.Command {
 			for _, t := range list {
 				fmt.Printf("  %s\n", t)
 			}
+			return nil
+		},
+	}
+}
+
+func newTemplatesRemoveCmd(app *App) *cobra.Command {
+	return &cobra.Command{
+		Use:     "remove [version]",
+		Aliases: []string{"rm"},
+		Short:   "Remove installed export templates",
+		Args:    cobra.MaximumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			version := ""
+			if len(args) > 0 {
+				version = args[0]
+			}
+			if version == "" && isTTY() {
+				v, err := promptInstalledTemplate(app, "Templates to remove")
+				if err != nil {
+					return err
+				}
+				version = v
+			}
+			if version == "" {
+				return fmt.Errorf("version required\n\n  gdt templates remove <version>")
+			}
+			if isTTY() {
+				ok, err := promptConfirm(fmt.Sprintf("Remove templates for %s?", version))
+				if err != nil {
+					return err
+				}
+				if !ok {
+					fmt.Fprintln(os.Stderr, "Aborted")
+					return nil
+				}
+			}
+
+			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			if err := svc.RemoveTemplates(version); err != nil {
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "Templates for %s removed\n", version)
 			return nil
 		},
 	}

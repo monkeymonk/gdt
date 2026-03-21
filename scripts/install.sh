@@ -48,6 +48,8 @@ main() {
     echo ""
     echo "  alias godot=\"gdt run\""
     echo ""
+
+    setup_completions
 }
 
 detect_platform() {
@@ -72,6 +74,63 @@ get_latest_version() {
     elif command -v wget >/dev/null 2>&1; then
         wget -qO- "https://api.github.com/repos/${REPO}/releases/latest" | grep '"tag_name"' | sed 's/.*"v\(.*\)".*/\1/'
     fi
+}
+
+setup_completions() {
+    # Skip if not interactive
+    if [ ! -t 0 ]; then
+        return
+    fi
+
+    printf "Install shell completions? [y/N] "
+    read -r answer
+    case "$answer" in
+        [yY]|[yY][eE][sS]) ;;
+        *) return ;;
+    esac
+
+    shell="$(detect_shell)"
+    case "$shell" in
+        zsh)
+            comp_dir="${ZDOTDIR:-$HOME}/.zfunc"
+            mkdir -p "$comp_dir"
+            "${BIN_DIR}/gdt" completion zsh > "${comp_dir}/_gdt"
+            echo "Zsh completions installed to ${comp_dir}/_gdt"
+            echo ""
+            echo "  Ensure this is in your .zshrc:"
+            echo "    fpath=(${comp_dir} \$fpath)"
+            echo "    autoload -Uz compinit && compinit"
+            ;;
+        bash)
+            if [ -d /etc/bash_completion.d ] && [ -w /etc/bash_completion.d ]; then
+                comp_dir="/etc/bash_completion.d"
+            else
+                comp_dir="${XDG_DATA_HOME:-$HOME/.local/share}/bash-completion/completions"
+                mkdir -p "$comp_dir"
+            fi
+            "${BIN_DIR}/gdt" completion bash > "${comp_dir}/gdt"
+            echo "Bash completions installed to ${comp_dir}/gdt"
+            ;;
+        fish)
+            comp_dir="${XDG_CONFIG_HOME:-$HOME/.config}/fish/completions"
+            mkdir -p "$comp_dir"
+            "${BIN_DIR}/gdt" completion fish > "${comp_dir}/gdt.fish"
+            echo "Fish completions installed to ${comp_dir}/gdt.fish"
+            ;;
+        *)
+            echo "Unsupported shell for completions: $shell"
+            ;;
+    esac
+}
+
+detect_shell() {
+    shell_name="$(basename "${SHELL:-/bin/sh}")"
+    case "$shell_name" in
+        zsh)  echo "zsh" ;;
+        fish) echo "fish" ;;
+        bash) echo "bash" ;;
+        *)    echo "$shell_name" ;;
+    esac
 }
 
 main "$@"
