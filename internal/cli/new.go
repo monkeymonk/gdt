@@ -154,8 +154,15 @@ func runNew(app *App, listTemplates bool, name string, templateURL string, versi
 		return err
 	}
 
-	// Check if template is from a plugin
-	if templateURL != "" && templateURL != "2d" && templateURL != "3d" && !strings.Contains(templateURL, "/") && !strings.Contains(templateURL, "http") {
+	// Check if template is from a plugin (core built-ins take priority)
+	isBuiltin := false
+	for _, bt := range project.AvailableTemplates() {
+		if templateURL == bt {
+			isBuiltin = true
+			break
+		}
+	}
+	if templateURL != "" && !isBuiltin && !strings.Contains(templateURL, "/") && !strings.Contains(templateURL, "http") {
 		pluginTemplates, _ := pluginSvc.DiscoverTemplates()
 		var items []plugins.NamespacedItem
 		for _, t := range pluginTemplates {

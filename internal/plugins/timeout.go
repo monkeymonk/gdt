@@ -26,14 +26,17 @@ func RunPluginSubcommand(binPath string, workDir string, env []string, timeout t
 	}
 
 	// Set process group so we can kill the whole tree on timeout.
+	// On timeout: SIGTERM the group, wait 5s, then SIGKILL.
 	if runtime.GOOS != "windows" {
 		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 		cmd.Cancel = func() error {
-			if cmd.Process != nil {
-				return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			if cmd.Process == nil {
+				return nil
 			}
+			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM)
 			return nil
 		}
+		cmd.WaitDelay = 5 * time.Second
 	}
 
 	var stdout bytes.Buffer

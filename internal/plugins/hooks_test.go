@@ -133,7 +133,6 @@ func TestManifest_HookFor(t *testing.T) {
 		Hooks: Hooks{
 			BeforeExport: "echo before",
 			AfterExport:  "echo after",
-			BeforeBuild:  "echo build",
 		},
 	}
 
@@ -143,7 +142,6 @@ func TestManifest_HookFor(t *testing.T) {
 	}{
 		{BeforeExport, "echo before"},
 		{AfterExport, "echo after"},
-		{BeforeBuild, "echo build"},
 		{HookEvent("unknown"), ""},
 	}
 
