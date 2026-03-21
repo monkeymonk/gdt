@@ -7,7 +7,7 @@ import (
 	"syscall"
 )
 
-func ExecShim(binary string, args []string) error {
+func ExecBinary(binary string, args []string) error {
 	argv := append([]string{binary}, args...)
 	return syscall.Exec(binary, argv, os.Environ())
 }

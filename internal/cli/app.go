@@ -55,10 +55,6 @@ func (a *App) CacheDir() string {
 	return filepath.Join(a.Home, "cache")
 }
 
-func (a *App) ShimsDir() string {
-	return filepath.Join(a.Home, "shims")
-}
-
 func (a *App) CachePath() string {
 	return filepath.Join(a.CacheDir(), "releases.json")
 }

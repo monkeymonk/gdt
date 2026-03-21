@@ -25,14 +25,11 @@ func newShellCmd(app *App) *cobra.Command {
 				exe, _ := os.Executable()
 				binDir = filepath.Dir(exe)
 			}
-			shimsDir := app.ShimsDir()
-
 			switch shell {
 			case "fish":
-				fmt.Printf("fish_add_path %s\n", shimsDir)
 				fmt.Printf("fish_add_path %s\n", binDir)
 			default:
-				fmt.Printf("export PATH=\"%s:%s:$PATH\"\n", shimsDir, binDir)
+				fmt.Printf("export PATH=\"%s:$PATH\"\n", binDir)
 			}
 			return nil
 		},

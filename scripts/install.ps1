@@ -46,19 +46,16 @@ function Install-Gdt {
         New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
         Expand-Archive -Path $tmpFile -DestinationPath $BinDir -Force
 
-        # Create shims directory
-        $shimsDir = Join-Path $InstallDir "shims"
-        New-Item -ItemType Directory -Path $shimsDir -Force | Out-Null
-
-        # Copy gdt as godot shim
-        Copy-Item (Join-Path $BinDir "gdt.exe") (Join-Path $shimsDir "godot.exe") -Force
-
         Write-Host ""
         Write-Host "gdt $version installed to $BinDir\gdt.exe"
         Write-Host ""
         Write-Host "Add gdt to your PATH:"
         Write-Host ""
-        Write-Host "  [Environment]::SetEnvironmentVariable('Path', '$BinDir;$shimsDir;' + [Environment]::GetEnvironmentVariable('Path', 'User'), 'User')"
+        Write-Host "  [Environment]::SetEnvironmentVariable('Path', '$BinDir;' + [Environment]::GetEnvironmentVariable('Path', 'User'), 'User')"
+        Write-Host ""
+        Write-Host "Optional: create a godot alias:"
+        Write-Host ""
+        Write-Host "  Set-Alias godot 'gdt run'"
         Write-Host ""
     }
     finally {
