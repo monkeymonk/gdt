@@ -26,7 +26,7 @@ func newExportCmd(app *App) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if listPresets {
-				return runExportList()
+				return runExportList(app)
 			}
 			preset := ""
 			if len(args) > 0 {
@@ -66,7 +66,7 @@ func newExportCmd(app *App) *cobra.Command {
 	return cmd
 }
 
-func runExportList() error {
+func runExportList(app *App) error {
 	cwd, _ := os.Getwd()
 	root, err := project.DetectRoot(cwd)
 	if err != nil {
@@ -81,6 +81,15 @@ func runExportList() error {
 	fmt.Println("Available export presets")
 	for _, p := range presets {
 		fmt.Printf("  %s\n", p)
+	}
+
+	pluginSvc := plugins.NewService(app.PluginsDir())
+	pluginPresets, _ := pluginSvc.DiscoverPresets()
+	if len(pluginPresets) > 0 {
+		fmt.Println("\nPlugin presets (append with: gdt export --add-preset <name>):")
+		for _, p := range pluginPresets {
+			fmt.Printf("  %s:%s\n", p.PluginName, p.Name)
+		}
 	}
 	return nil
 }
