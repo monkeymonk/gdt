@@ -230,7 +230,7 @@ gdt ci setup
 
 | Flag | Description |
 |---|---|
-| `--provider` | CI provider: `github`, `gitlab`, `generic` |
+| `--provider` | CI provider: `github`, `gitlab`, `generic`, or plugin-contributed |
 
 ### gdt templates install
 
@@ -274,7 +274,8 @@ gdt new [name]
 | `--version` | Engine version to pin |
 | `--renderer` | `forward_plus`, `mobile`, `gl_compatibility` |
 | `--csharp` | Create a C# project (pins to mono build) |
-| `--template` | Built-in template (`2d`, `3d`) or git repo (`user/repo` or URL) |
+| `--template` | Built-in (`2d`, `3d`), plugin template, or git repo (`user/repo` or URL) |
+| `--list-templates` | List available templates (built-in and plugin) |
 
 ### gdt completion
 
@@ -525,17 +526,7 @@ By default, engine output is captured silently. On failure, captured stdout/stde
 
 The default output directory is `dist/<preset-name>/`.
 
-### Plugin Hooks
-
-Plugins can hook into the export lifecycle:
-
-| Hook | Timing |
-|---|---|
-| `before_export` | Before Godot export starts |
-| `after_export` | After successful export |
-| `before_build` | Before a build step |
-
-See [Plugins](#plugins) for hook configuration.
+Plugin hooks (`before_export`, `after_export`) are executed automatically around the export process. See [Plugins](#plugins) for the full list of lifecycle hooks.
 
 ---
 
@@ -629,7 +620,7 @@ When the primary GitHub download URL is unavailable, gdt tries configured mirror
 
 ## Plugins
 
-gdt supports plugins distributed as Git repositories with prebuilt binaries.
+gdt supports plugins distributed as Git repositories with prebuilt binaries. Plugins can contribute commands, templates, export presets, CI providers, doctor checks, completions, and lifecycle hooks.
 
 ```sh
 # Install a plugin
@@ -643,6 +634,7 @@ gdt plugin update
 
 # Create your own plugin
 gdt plugin new mytools
+gdt plugin new mytools --lang go
 ```
 
 Plugins receive context via environment variables:
@@ -653,6 +645,7 @@ Plugins receive context via environment variables:
 | `GDT_PROJECT_ROOT` | Detected Godot project root |
 | `GDT_GODOT_VERSION` | Resolved engine version |
 | `GDT_ENGINE_PATH` | Absolute path to engine binary |
+| `GDT_HOOK_EVENT` | Current hook event name (during hooks) |
 
 ### Plugin Manifest
 
@@ -661,29 +654,79 @@ Plugins must include a `plugin.toml` in their root:
 ```toml
 name = "mytools"
 version = "0.1.0"
+protocol = 2
 commands = ["mytools"]
 requires_gdt = ">=1.0"
 description = "My custom tools"
 
-[hooks]
-before_export = "scripts/pre-export.sh"
-after_export = "scripts/post-export.sh"
+[contributions]
+templates = ["starter"]
+presets = ["android-release"]
+ci_providers = ["bitbucket"]
+hooks = ["after_new", "before_export"]
+doctor = true
+completions = true
 ```
+
+The `protocol` field determines the plugin interface:
+- **Protocol 1** (default if absent): Legacy shell-string hooks via `[hooks]` table
+- **Protocol 2**: Structured contributions via `[contributions]` table with subcommand protocol
+
+### Contributions
+
+| Type | Manifest Key | Mechanism |
+|---|---|---|
+| Commands | `commands` | Binary dispatch (existing) |
+| Templates | `templates` | Files in `templates/` directory |
+| Export presets | `presets` | Files in `presets/` directory |
+| CI providers | `ci_providers` | Files in `ci/` directory |
+| Hooks | `hooks` | Subcommand: `binary hook <event>` |
+| Doctor checks | `doctor = true` | Subcommand: `binary doctor check` |
+| Completions | `completions = true` | Subcommand: `binary completions <shell>` |
+
+Plugin templates appear in `gdt new --list-templates` and can be used with `gdt new --template <name>`. Plugin presets appear in `gdt export --list`. Plugin CI providers appear in `gdt ci setup`.
+
+### Namespace Resolution
+
+All plugin contributions are namespaced as `<plugin>:<name>`. Short names work when unambiguous:
+
+```sh
+# Short name (if only one plugin provides "starter")
+gdt new --template starter
+
+# Qualified name (always works)
+gdt new --template mytools:starter
+```
+
+Core built-in templates (`2d`, `3d`) take priority over plugin templates with the same name.
 
 ### Hooks
 
-Plugins can register shell commands for lifecycle events:
+Plugins declare lifecycle hooks in `contributions.hooks`. The plugin binary is called with `binary hook <event>`.
 
-| Event | Description |
+| Hook | Timing |
 |---|---|
-| `before_export` | Runs before `gdt export` starts |
-| `after_export` | Runs after a successful export |
-| `before_build` | Runs before a build step |
+| `before_new` | Before project scaffolding |
+| `after_new` | After project created |
+| `before_export` | Before Godot export starts |
+| `after_export` | After successful export |
+| `before_run` | Before `gdt run` |
+| `after_install` | After engine version installed |
+| `after_use` | After engine version switched |
+| `after_ci_setup` | After CI config generated |
 
-Hook exit codes:
+Hooks run in alphabetical order by plugin name. Stdout uses the line protocol (`OK`, `WARN`, `FAIL` followed by a message). Stderr is for human output.
+
+Hook exit codes (V2):
 - **Exit 0**: Success
-- **Exit 2**: Fatal error — stops the operation
-- **Other non-zero**: Warning — logged but does not stop the operation
+- **Non-zero**: Fatal error — aborts the pipeline
+
+V2 hooks that want to emit warnings without aborting should exit 0 and print `WARN` lines on stdout.
+
+Legacy V1 plugins (without `[contributions]`) still use shell-string hooks:
+- **Exit 0**: Success
+- **Exit 2**: Fatal error
+- **Other non-zero**: Warning
 
 ---
 

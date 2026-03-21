@@ -12,11 +12,6 @@ type ScaffoldOptions struct {
 	Lang string // "shell" (default) or "go"
 }
 
-// Scaffold creates a new plugin directory with V2 structure.
-func (s *Service) Scaffold(name string) (string, error) {
-	return s.ScaffoldV2(ScaffoldOptions{Name: name, Lang: "shell"})
-}
-
 // ScaffoldV2 creates a new plugin directory with V2 structure and language choice.
 func (s *Service) ScaffoldV2(opts ScaffoldOptions) (string, error) {
 	dir := filepath.Join(".", "gdt-"+opts.Name)

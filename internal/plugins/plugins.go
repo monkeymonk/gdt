@@ -12,7 +12,7 @@ type Plugin struct {
 	Manifest Manifest
 }
 
-func Discover(pluginsDir string) ([]Plugin, error) {
+func discover(pluginsDir string) ([]Plugin, error) {
 	entries, err := os.ReadDir(pluginsDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -43,7 +43,7 @@ func Discover(pluginsDir string) ([]Plugin, error) {
 	return plugins, nil
 }
 
-func FindForCommand(plugins []Plugin, command string) (Plugin, bool) {
+func findForCommand(plugins []Plugin, command string) (Plugin, bool) {
 	for _, p := range plugins {
 		for _, c := range p.Manifest.Commands {
 			if c == command {

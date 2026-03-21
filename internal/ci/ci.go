@@ -7,13 +7,6 @@ type Provider struct {
 	Label string
 }
 
-// ExternalProvider holds a CI provider contributed by a plugin.
-type ExternalProvider struct {
-	Name     string
-	Label    string
-	FilePath string
-}
-
 func Providers() []Provider {
 	return []Provider{
 		{Name: "github", Label: "GitHub Actions"},

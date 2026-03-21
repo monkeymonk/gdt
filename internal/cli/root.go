@@ -63,11 +63,11 @@ func NewRootCmd(app *App) *cobra.Command {
 	)
 
 	// Plugin dispatch for unknown commands
+	pluginSvc := plugins.NewService(app.PluginsDir())
 	origHelpFunc := root.HelpFunc()
 	root.SetHelpFunc(func(cmd *cobra.Command, args []string) {
 		if len(args) > 0 {
-			pluginList, _ := plugins.Discover(app.PluginsDir())
-			if p, ok := plugins.FindForCommand(pluginList, args[0]); ok {
+			if p, ok := pluginSvc.FindForCommand(args[0]); ok {
 				dispatchPlugin(app, p, args[1:])
 				return
 			}

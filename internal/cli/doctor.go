@@ -93,13 +93,13 @@ func runDoctor(app *App) error {
 		}
 	}
 
-	pluginList, _ := plugins.Discover(app.PluginsDir())
+	pluginSvc := plugins.NewService(app.PluginsDir())
+	pluginList, _ := pluginSvc.Discover()
 	for _, p := range pluginList {
 		fmt.Printf("  ok  plugin %s v%s\n", p.Manifest.Name, p.Manifest.Version)
 	}
 
 	// Run plugin doctor checks (V2 protocol)
-	pluginSvc := plugins.NewService(app.PluginsDir())
 	doctorPlugins := pluginSvc.DiscoverDoctorPlugins()
 	for _, p := range doctorPlugins {
 		binPath := filepath.Join(p.Dir, p.Manifest.Name)

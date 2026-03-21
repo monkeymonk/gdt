@@ -50,7 +50,7 @@ requires_gdt = ">=1.0"
 
 	os.MkdirAll(filepath.Join(dir, "not-a-plugin"), 0755)
 
-	plugins, err := Discover(dir)
+	plugins, err := discover(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ requires_gdt = ">=1.0"
 
 func TestDiscoverEmpty(t *testing.T) {
 	dir := t.TempDir()
-	plugins, err := Discover(dir)
+	plugins, err := discover(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func TestFindPluginForCommand(t *testing.T) {
 		},
 	}
 
-	p, ok := FindForCommand(plugins, "assets")
+	p, ok := findForCommand(plugins, "assets")
 	if !ok {
 		t.Fatal("should find plugin for 'assets'")
 	}
@@ -155,7 +155,7 @@ func TestFindPluginForCommand(t *testing.T) {
 		t.Errorf("name = %q, want %q", p.Manifest.Name, "assets")
 	}
 
-	_, ok = FindForCommand(plugins, "unknown")
+	_, ok = findForCommand(plugins, "unknown")
 	if ok {
 		t.Error("should not find plugin for 'unknown'")
 	}

@@ -12,7 +12,7 @@ func NewService(dir string) *Service {
 
 // Discover returns all installed plugins.
 func (s *Service) Discover() ([]Plugin, error) {
-	return Discover(s.Dir)
+	return discover(s.Dir)
 }
 
 // FindForCommand finds a plugin that handles the given command.
@@ -21,5 +21,5 @@ func (s *Service) FindForCommand(cmd string) (Plugin, bool) {
 	if err != nil {
 		return Plugin{}, false
 	}
-	return FindForCommand(pluginList, cmd)
+	return findForCommand(pluginList, cmd)
 }

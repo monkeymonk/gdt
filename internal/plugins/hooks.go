@@ -44,7 +44,7 @@ func (s *Service) RunHooks(event HookEvent, ctx HookContext) error {
 	env = append(os.Environ(), env...)
 
 	for _, p := range plugins {
-		if p.Manifest.Protocol >= 2 {
+		if p.Manifest.HasContributions() {
 			if err := s.runV2Hook(p, event, env); err != nil {
 				return err
 			}
