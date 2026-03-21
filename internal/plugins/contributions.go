@@ -4,7 +4,15 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 )
+
+// inPluginDir returns true if target is inside (or equal to) pluginDir.
+func inPluginDir(pluginDir, target string) bool {
+	clean := filepath.Clean(target)
+	prefix := filepath.Clean(pluginDir) + string(filepath.Separator)
+	return clean == filepath.Clean(pluginDir) || strings.HasPrefix(clean, prefix)
+}
 
 // PluginTemplate represents a template contributed by a plugin.
 type PluginTemplate struct {
@@ -39,6 +47,11 @@ func (s *Service) DiscoverTemplates() ([]PluginTemplate, error) {
 	for _, p := range plugins {
 		for _, name := range p.Manifest.Contributions.Templates {
 			dir := filepath.Join(p.Dir, "templates", name)
+			if !inPluginDir(p.Dir, dir) {
+				slog.Warn("plugin declares template with invalid path, skipping",
+					"plugin", p.Manifest.Name, "template", name)
+				continue
+			}
 			if _, err := os.Stat(dir); os.IsNotExist(err) {
 				slog.Warn("plugin declares template but directory missing",
 					"plugin", p.Manifest.Name, "template", name, "expected", dir)
@@ -65,6 +78,11 @@ func (s *Service) DiscoverPresets() ([]PluginPreset, error) {
 	for _, p := range plugins {
 		for _, name := range p.Manifest.Contributions.Presets {
 			fp := filepath.Join(p.Dir, "presets", name+".cfg")
+			if !inPluginDir(p.Dir, fp) {
+				slog.Warn("plugin declares preset with invalid path, skipping",
+					"plugin", p.Manifest.Name, "preset", name)
+				continue
+			}
 			if _, err := os.Stat(fp); os.IsNotExist(err) {
 				slog.Warn("plugin declares preset but file missing",
 					"plugin", p.Manifest.Name, "preset", name, "expected", fp)
@@ -94,6 +112,11 @@ func (s *Service) DiscoverCIProviders() ([]PluginCIProvider, error) {
 			var fp string
 			for _, ext := range []string{".yml", ".yaml", ".sh"} {
 				candidate := filepath.Join(p.Dir, "ci", name+ext)
+				if !inPluginDir(p.Dir, candidate) {
+					slog.Warn("plugin declares CI provider with invalid path, skipping",
+						"plugin", p.Manifest.Name, "provider", name)
+					break
+				}
 				if _, err := os.Stat(candidate); err == nil {
 					fp = candidate
 					break
@@ -116,7 +139,11 @@ func (s *Service) DiscoverCIProviders() ([]PluginCIProvider, error) {
 
 // DiscoverDoctorPlugins returns all plugins that declare doctor = true.
 func (s *Service) DiscoverDoctorPlugins() []Plugin {
-	plugins, _ := s.Discover()
+	plugins, err := s.Discover()
+	if err != nil {
+		slog.Warn("failed to discover plugins for doctor checks", "error", err)
+		return nil
+	}
 	var result []Plugin
 	for _, p := range plugins {
 		if p.Manifest.Contributions.Doctor {
@@ -128,7 +155,11 @@ func (s *Service) DiscoverDoctorPlugins() []Plugin {
 
 // DiscoverCompletionPlugins returns all plugins that declare completions = true.
 func (s *Service) DiscoverCompletionPlugins() []Plugin {
-	plugins, _ := s.Discover()
+	plugins, err := s.Discover()
+	if err != nil {
+		slog.Warn("failed to discover plugins for completions", "error", err)
+		return nil
+	}
 	var result []Plugin
 	for _, p := range plugins {
 		if p.Manifest.Contributions.Completions {
