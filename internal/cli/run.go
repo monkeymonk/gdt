@@ -64,5 +64,5 @@ func runGodot(app *App, args []string, editor bool) error {
 	if err != nil {
 		return err
 	}
-	return engine.ExecShim(binPath, engineArgs)
+	return engine.ExecBinary(binPath, engineArgs)
 }

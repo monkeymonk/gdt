@@ -26,20 +26,17 @@ func runDoctor(app *App) error {
 	svc := engine.NewService(app.Home, app.Platform, app.Config)
 	issues := 0
 
-	shimPath := filepath.Join(app.ShimsDir(), "godot")
-	if _, err := os.Lstat(shimPath); err == nil {
-		fmt.Println("  ok  shim installed")
-	} else {
-		fmt.Println("  FAIL  shim not installed")
-		fmt.Printf("        Run: gdt shell init\n")
-		issues++
+	binDir := filepath.Dir(os.Args[0])
+	if binDir == "." {
+		if exe, err := os.Executable(); err == nil {
+			binDir = filepath.Dir(exe)
+		}
 	}
-
 	pathEnv := os.Getenv("PATH")
-	if strings.Contains(pathEnv, app.ShimsDir()) {
+	if strings.Contains(pathEnv, binDir) {
 		fmt.Println("  ok  PATH configured")
 	} else {
-		fmt.Println("  WARN  shim directory not in PATH")
+		fmt.Println("  WARN  gdt not in PATH")
 		fmt.Printf("        Add to your shell profile: eval \"$(gdt shell init)\"\n")
 		issues++
 	}

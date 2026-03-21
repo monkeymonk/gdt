@@ -45,4 +45,3 @@ func (s *Service) versionsDir() string  { return filepath.Join(s.Home, "versions
 func (s *Service) templatesDir() string { return filepath.Join(s.Home, "templates") }
 func (s *Service) cacheDir() string     { return filepath.Join(s.Home, "cache") }
 func (s *Service) cachePath() string    { return filepath.Join(s.Home, "cache", "releases.json") }
-func (s *Service) shimsDir() string     { return filepath.Join(s.Home, "shims") }

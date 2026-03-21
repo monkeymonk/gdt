@@ -37,22 +37,16 @@ main() {
     tar -xzf "${tmpdir}/${artifact}" -C "$BIN_DIR"
     chmod +x "${BIN_DIR}/gdt"
 
-    # Create shims directory
-    mkdir -p "${INSTALL_DIR}/shims"
-
-    # Create godot shim symlink
-    ln -sf "${BIN_DIR}/gdt" "${INSTALL_DIR}/shims/godot"
-
     echo ""
     echo "gdt ${version} installed to ${BIN_DIR}/gdt"
     echo ""
     echo "Add gdt to your PATH by adding this to your shell profile:"
     echo ""
-    echo "  export PATH=\"${BIN_DIR}:\${INSTALL_DIR}/shims:\$PATH\""
-    echo ""
-    echo "Or run:"
-    echo ""
     echo "  eval \"\$(${BIN_DIR}/gdt shell init)\""
+    echo ""
+    echo "Optional: create a godot alias:"
+    echo ""
+    echo "  alias godot=\"gdt run\""
     echo ""
 }
 

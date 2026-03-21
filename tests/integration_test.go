@@ -315,9 +315,6 @@ func TestShellInit(t *testing.T) {
 	if !strings.Contains(out, "PATH") && !strings.Contains(out, "fish_add_path") {
 		t.Errorf("expected PATH export, got: %s", out)
 	}
-	if !strings.Contains(out, filepath.Join(home, "shims")) {
-		t.Errorf("expected shims dir in output, got: %s", out)
-	}
 }
 
 // --- Completion ---
@@ -562,11 +559,6 @@ func TestDoctorWithVersions(t *testing.T) {
 	setupFakeVersion(t, home, "4.3")
 	setupFakePlugin(t, home, "testplugin", "0.1.0")
 
-	// Create shim
-	shimsDir := filepath.Join(home, "shims")
-	os.MkdirAll(shimsDir, 0755)
-	os.Symlink(gdtBinary, filepath.Join(shimsDir, "godot"))
-
 	out, err := runGdt(t, home, "doctor")
 	if err != nil {
 		t.Fatalf("error: %v, output: %s", err, out)
@@ -576,9 +568,6 @@ func TestDoctorWithVersions(t *testing.T) {
 	}
 	if !strings.Contains(out, "plugin testplugin") {
 		t.Error("should show plugin check")
-	}
-	if !strings.Contains(out, "shim installed") {
-		t.Error("should confirm shim installed")
 	}
 }
 
@@ -596,14 +585,6 @@ func TestDoctorMissingBinary(t *testing.T) {
 	}
 	if !strings.Contains(out, "issue") {
 		t.Error("should report issues found")
-	}
-}
-
-func TestDoctorNoShim(t *testing.T) {
-	home := t.TempDir()
-	out, _ := runGdt(t, home, "doctor")
-	if !strings.Contains(out, "shim not installed") {
-		t.Errorf("should report shim not installed, got: %s", out)
 	}
 }
 
