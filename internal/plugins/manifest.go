@@ -6,10 +6,39 @@ import "github.com/BurntSushi/toml"
 type HookEvent string
 
 const (
+	BeforeNew    HookEvent = "before_new"
+	AfterNew     HookEvent = "after_new"
 	BeforeExport HookEvent = "before_export"
 	AfterExport  HookEvent = "after_export"
 	BeforeBuild  HookEvent = "before_build"
+	AfterBuild   HookEvent = "after_build"
+	BeforeRun    HookEvent = "before_run"
+	AfterInstall HookEvent = "after_install"
+	AfterUse     HookEvent = "after_use"
+	AfterCISetup HookEvent = "after_ci_setup"
 )
+
+// AllHookEvents returns all valid hook event names.
+func AllHookEvents() []HookEvent {
+	return []HookEvent{
+		BeforeNew, AfterNew,
+		BeforeExport, AfterExport,
+		BeforeBuild, AfterBuild,
+		BeforeRun,
+		AfterInstall, AfterUse,
+		AfterCISetup,
+	}
+}
+
+// ValidHookEvent returns true if the event name is a recognized hook event.
+func ValidHookEvent(name string) bool {
+	for _, e := range AllHookEvents() {
+		if string(e) == name {
+			return true
+		}
+	}
+	return false
+}
 
 // Hooks defines optional shell commands to run at lifecycle events.
 type Hooks struct {
