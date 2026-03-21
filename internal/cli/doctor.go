@@ -98,6 +98,41 @@ func runDoctor(app *App) error {
 		fmt.Printf("  ok  plugin %s v%s\n", p.Manifest.Name, p.Manifest.Version)
 	}
 
+	// Run plugin doctor checks (V2 protocol)
+	pluginSvc := plugins.NewService(app.PluginsDir())
+	doctorPlugins := pluginSvc.DiscoverDoctorPlugins()
+	for _, p := range doctorPlugins {
+		binPath := filepath.Join(p.Dir, p.Manifest.Name)
+		if _, err := os.Stat(binPath); os.IsNotExist(err) {
+			fmt.Printf("  WARN  [%s] doctor declared but binary missing\n", p.Manifest.Name)
+			issues++
+			continue
+		}
+
+		env := append(os.Environ(), plugins.BuildEnv(plugins.EnvContext{
+			Home: app.Home,
+		})...)
+		out, runErr := plugins.RunPluginSubcommand(binPath, p.Dir, env, plugins.DefaultHookTimeout, "doctor", "check")
+		if runErr != nil {
+			fmt.Printf("  FAIL  [%s] doctor check failed: %s\n", p.Manifest.Name, runErr)
+			issues++
+			continue
+		}
+
+		for _, r := range plugins.ParseStatusLines(out) {
+			switch r.Status {
+			case "OK":
+				fmt.Printf("  ok    [%s] %s\n", p.Manifest.Name, r.Message)
+			case "WARN":
+				fmt.Printf("  WARN  [%s] %s\n", p.Manifest.Name, r.Message)
+				issues++
+			case "FAIL":
+				fmt.Printf("  FAIL  [%s] %s\n", p.Manifest.Name, r.Message)
+				issues++
+			}
+		}
+	}
+
 	if issues == 0 {
 		fmt.Println("\nAll checks passed")
 	} else {
