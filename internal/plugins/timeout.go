@@ -14,7 +14,7 @@ const DefaultHookTimeout = 60 * time.Second
 
 // RunPluginSubcommand executes a plugin binary with the given subcommand and args.
 // It captures stdout and returns it. Stderr goes to the process stderr.
-// On timeout, sends SIGTERM, waits 5s, then SIGKILL.
+// On timeout, sends SIGKILL to the process group.
 func RunPluginSubcommand(binPath string, workDir string, env []string, timeout time.Duration, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -28,6 +28,12 @@ func RunPluginSubcommand(binPath string, workDir string, env []string, timeout t
 	// Set process group so we can kill the whole tree on timeout.
 	if runtime.GOOS != "windows" {
 		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		cmd.Cancel = func() error {
+			if cmd.Process != nil {
+				return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			}
+			return nil
+		}
 	}
 
 	var stdout bytes.Buffer
