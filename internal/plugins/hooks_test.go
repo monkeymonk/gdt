@@ -7,30 +7,53 @@ import (
 	"testing"
 )
 
-func writeTestPlugin(t *testing.T, dir, name, hookEvent, script string) {
+func writeV1TestPlugin(t *testing.T, dir, name, hookEvent, script string) {
 	t.Helper()
 	pluginDir := filepath.Join(dir, name)
-	if err := os.MkdirAll(pluginDir, 0o755); err != nil {
-		t.Fatal(err)
-	}
+	os.MkdirAll(pluginDir, 0o755)
 	manifest := `name = "` + name + `"
 version = "1.0.0"
 
 [hooks]
 ` + hookEvent + ` = "` + script + `"
 `
-	if err := os.WriteFile(filepath.Join(pluginDir, ManifestFile), []byte(manifest), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	os.WriteFile(filepath.Join(pluginDir, ManifestFile), []byte(manifest), 0o644)
 }
 
-func TestRunHooks_Success(t *testing.T) {
+func writeV2TestPlugin(t *testing.T, dir, name string, hooks []string, script string) string {
+	t.Helper()
+	pluginDir := filepath.Join(dir, name)
+	os.MkdirAll(pluginDir, 0o755)
+
+	hooksToml := "["
+	for i, h := range hooks {
+		if i > 0 {
+			hooksToml += ", "
+		}
+		hooksToml += `"` + h + `"`
+	}
+	hooksToml += "]"
+
+	manifest := `name = "` + name + `"
+version = "1.0.0"
+protocol = 2
+
+[contributions]
+hooks = ` + hooksToml + `
+`
+	os.WriteFile(filepath.Join(pluginDir, ManifestFile), []byte(manifest), 0o644)
+
+	binPath := filepath.Join(pluginDir, name)
+	os.WriteFile(binPath, []byte(script), 0o755)
+	return pluginDir
+}
+
+func TestRunHooks_V1_Success(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping on windows")
 	}
-
 	dir := t.TempDir()
-	writeTestPlugin(t, dir, "test-plugin", "before_export", "exit 0")
+	writeV1TestPlugin(t, dir, "test-plugin", "before_export", "exit 0")
 
 	svc := NewService(dir)
 	err := svc.RunHooks(BeforeExport, HookContext{
@@ -43,53 +66,65 @@ func TestRunHooks_Success(t *testing.T) {
 	}
 }
 
-func TestRunHooks_ExitCode2_Fatal(t *testing.T) {
+func TestRunHooks_V2_Success(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping on windows")
 	}
-
 	dir := t.TempDir()
-	writeTestPlugin(t, dir, "fatal-plugin", "after_export", "exit 2")
+	writeV2TestPlugin(t, dir, "v2plugin", []string{"before_export"}, "#!/bin/sh\necho \"OK hook ran\"\n")
 
 	svc := NewService(dir)
-	err := svc.RunHooks(AfterExport, HookContext{
+	err := svc.RunHooks(BeforeExport, HookContext{
 		ProjectRoot:  dir,
 		GodotVersion: "4.2.1",
 		EnginePath:   "/usr/bin/godot",
 	})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+}
+
+func TestRunHooks_V2_NonZeroExit_Fatal(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
+	dir := t.TempDir()
+	writeV2TestPlugin(t, dir, "failplugin", []string{"before_export"}, "#!/bin/sh\nexit 1\n")
+
+	svc := NewService(dir)
+	err := svc.RunHooks(BeforeExport, HookContext{})
 	if err == nil {
-		t.Fatal("expected error for exit code 2, got nil")
+		t.Fatal("expected error for non-zero exit")
 	}
 }
 
-func TestRunHooks_NonZeroExit_Warning(t *testing.T) {
+func TestRunHooks_V2_UndeclaredEvent_Skipped(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping on windows")
 	}
-
 	dir := t.TempDir()
-	writeTestPlugin(t, dir, "warn-plugin", "before_build", "exit 1")
+	writeV2TestPlugin(t, dir, "selective", []string{"after_new"}, "#!/bin/sh\nexit 1\n")
 
 	svc := NewService(dir)
-	err := svc.RunHooks(BeforeBuild, HookContext{
-		ProjectRoot:  dir,
-		GodotVersion: "4.2.1",
-		EnginePath:   "/usr/bin/godot",
-	})
+	// Plugin only declares after_new, so before_export should be skipped
+	err := svc.RunHooks(BeforeExport, HookContext{})
 	if err != nil {
-		t.Fatalf("expected warning only (no error), got: %v", err)
+		t.Fatalf("expected no error for undeclared event, got: %v", err)
 	}
 }
 
-func TestRunHooks_NoMatchingHook(t *testing.T) {
+func TestRunHooks_AlphabeticalOrder(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows")
+	}
 	dir := t.TempDir()
-	writeTestPlugin(t, dir, "no-hook-plugin", "before_export", "exit 0")
+	writeV2TestPlugin(t, dir, "b-plugin", []string{"before_export"}, "#!/bin/sh\necho \"OK b ran\"\n")
+	writeV2TestPlugin(t, dir, "a-plugin", []string{"before_export"}, "#!/bin/sh\necho \"OK a ran\"\n")
 
 	svc := NewService(dir)
-	// Ask for AfterExport but plugin only has BeforeExport
-	err := svc.RunHooks(AfterExport, HookContext{})
+	err := svc.RunHooks(BeforeExport, HookContext{})
 	if err != nil {
-		t.Fatalf("expected no error for unmatched hook, got: %v", err)
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
