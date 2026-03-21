@@ -4,6 +4,8 @@ import (
 	"os"
 
 	"github.com/monkeymonk/gdt/internal/engine"
+	"github.com/monkeymonk/gdt/internal/plugins"
+	"github.com/monkeymonk/gdt/internal/project"
 	"github.com/spf13/cobra"
 )
 
@@ -64,5 +66,18 @@ func runGodot(app *App, args []string, editor bool) error {
 	if err != nil {
 		return err
 	}
+
+	pluginSvc := plugins.NewService(app.PluginsDir())
+	cwd, _ := os.Getwd()
+	projectRoot, _ := project.DetectRoot(cwd)
+	hookCtx := plugins.HookContext{
+		ProjectRoot:  projectRoot,
+		GodotVersion: version,
+		EnginePath:   binPath,
+	}
+	if err := pluginSvc.RunHooks(plugins.BeforeRun, hookCtx); err != nil {
+		return err
+	}
+
 	return engine.ExecBinary(binPath, engineArgs)
 }
