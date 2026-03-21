@@ -1,5 +1,9 @@
 name = "ai"
 version = "0.1.0"
+protocol = 2
 commands = ["ai"]
 requires_gdt = ">=1.0"
 description = "AI development tools and project introspection"
+
+[contributions]
+completions = true

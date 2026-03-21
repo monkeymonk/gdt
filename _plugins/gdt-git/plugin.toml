@@ -1,5 +1,9 @@
 name = "git"
 version = "0.1.0"
+protocol = 2
 commands = ["git"]
 requires_gdt = ">=1.0"
 description = "Git workflow utilities for Godot projects"
+
+[contributions]
+hooks = ["after_new"]

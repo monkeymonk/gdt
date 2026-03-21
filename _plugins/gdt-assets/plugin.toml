@@ -1,5 +1,10 @@
 name = "assets"
 version = "0.1.0"
+protocol = 2
 commands = ["assets"]
 requires_gdt = ">=1.0"
 description = "Asset optimization and auditing for Godot projects"
+
+[contributions]
+hooks = ["before_export"]
+doctor = true
