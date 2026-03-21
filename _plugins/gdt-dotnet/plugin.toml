@@ -6,6 +6,6 @@ requires_gdt = ">=1.0"
 description = "C# and .NET tooling for Godot projects"
 
 [contributions]
-hooks = ["after_new", "before_build", "before_export"]
+hooks = ["after_new", "before_export"]
 doctor = true
 completions = true

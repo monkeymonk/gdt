@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 )
 
 // HookContext holds runtime context passed to hook scripts via environment.
@@ -79,17 +81,22 @@ func (s *Service) runV2Hook(p Plugin, event HookEvent, env []string) error {
 
 	out, err := RunPluginSubcommand(binPath, p.Dir, env, DefaultHookTimeout, "hook", string(event))
 
+	var failures []string
 	for _, r := range ParseStatusLines(out) {
 		switch r.Status {
 		case "WARN":
 			slog.Warn("hook warning", "plugin", p.Manifest.Name, "message", r.Message)
 		case "FAIL":
 			slog.Error("hook failure", "plugin", p.Manifest.Name, "message", r.Message)
+			failures = append(failures, r.Message)
 		}
 	}
 
 	if err != nil {
 		return fmt.Errorf("hook %s from plugin %s failed: %w", event, p.Manifest.Name, err)
+	}
+	if len(failures) > 0 {
+		return fmt.Errorf("hook %s from plugin %s reported failures: %s", event, p.Manifest.Name, strings.Join(failures, "; "))
 	}
 	return nil
 }
@@ -115,19 +122,10 @@ func (s *Service) runV1Hook(p Plugin, event HookEvent, env []string) error {
 
 	if runErr := cmd.Run(); runErr != nil {
 		var exitErr *exec.ExitError
-		if ok := isExitError(runErr, &exitErr); ok && exitErr.ExitCode() == 2 {
+		if errors.As(runErr, &exitErr) && exitErr.ExitCode() == 2 {
 			return fmt.Errorf("hook %s from plugin %s failed (exit 2): %w", event, p.Manifest.Name, runErr)
 		}
 		slog.Warn("v1 hook returned non-zero exit", "plugin", p.Manifest.Name, "event", event, "error", runErr)
 	}
 	return nil
-}
-
-// isExitError checks if err is an *exec.ExitError and assigns it.
-func isExitError(err error, target **exec.ExitError) bool {
-	if ee, ok := err.(*exec.ExitError); ok {
-		*target = ee
-		return true
-	}
-	return false
 }
