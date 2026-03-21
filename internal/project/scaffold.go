@@ -110,6 +110,51 @@ func Generate(opts ScaffoldOptions) error {
 	return nil
 }
 
+// CopyTemplate copies a template directory to destDir, processing Go template placeholders.
+func CopyTemplate(srcDir string, destDir string, name string, version string) error {
+	if _, err := os.Stat(filepath.Join(destDir, "project.godot")); err == nil {
+		return fmt.Errorf("project.godot already exists in %s", destDir)
+	}
+
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return err
+	}
+
+	data := map[string]string{
+		"Name": name,
+	}
+
+	return filepath.WalkDir(srcDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relPath, _ := filepath.Rel(srcDir, path)
+		destPath := filepath.Join(destDir, relPath)
+
+		if d.IsDir() {
+			return os.MkdirAll(destPath, 0o755)
+		}
+
+		raw, readErr := os.ReadFile(path)
+		if readErr != nil {
+			return readErr
+		}
+
+		tmpl, parseErr := template.New(d.Name()).Parse(string(raw))
+		if parseErr != nil {
+			return os.WriteFile(destPath, raw, 0o644)
+		}
+
+		var buf strings.Builder
+		if execErr := tmpl.Execute(&buf, data); execErr != nil {
+			return execErr
+		}
+
+		return os.WriteFile(destPath, []byte(buf.String()), 0o644)
+	})
+}
+
 func CloneTemplate(repoURL string, destDir string, version string) error {
 	if !strings.HasPrefix(repoURL, "http") && !strings.HasPrefix(repoURL, "/") {
 		repoURL = "https://github.com/" + repoURL

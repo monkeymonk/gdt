@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/monkeymonk/gdt/internal/engine"
+	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/monkeymonk/gdt/internal/project"
 	"github.com/spf13/cobra"
 )
@@ -16,6 +18,7 @@ func newNewCmd(app *App) *cobra.Command {
 	var version string
 	var renderer string
 	var csharp bool
+	var listTemplates bool
 
 	cmd := &cobra.Command{
 		Use:   "new [name]",
@@ -28,7 +31,7 @@ func newNewCmd(app *App) *cobra.Command {
 			}
 			csharpExplicit := cmd.Flags().Changed("csharp")
 			rendererExplicit := cmd.Flags().Changed("renderer")
-			return runNew(app, name, templateURL, version, renderer, csharp, csharpExplicit, rendererExplicit)
+			return runNew(app, listTemplates, name, templateURL, version, renderer, csharp, csharpExplicit, rendererExplicit)
 		},
 	}
 
@@ -36,11 +39,36 @@ func newNewCmd(app *App) *cobra.Command {
 	cmd.Flags().StringVar(&version, "version", "", "Engine version to pin")
 	cmd.Flags().StringVar(&renderer, "renderer", "", "Renderer: forward_plus, mobile, gl_compatibility")
 	cmd.Flags().BoolVar(&csharp, "csharp", false, "Create a C# project (uses Mono build)")
+	cmd.Flags().BoolVar(&listTemplates, "list-templates", false, "List available templates")
 
 	return cmd
 }
 
-func runNew(app *App, name string, templateURL string, version string, renderer string, csharp bool, csharpExplicit bool, rendererExplicit bool) error {
+func runListTemplates(app *App) error {
+	fmt.Println("Built-in:")
+	for _, t := range project.AvailableTemplates() {
+		fmt.Printf("  %s\n", t)
+	}
+
+	svc := plugins.NewService(app.PluginsDir())
+	templates, err := svc.DiscoverTemplates()
+	if err != nil {
+		return err
+	}
+	if len(templates) > 0 {
+		fmt.Println("\nPlugins:")
+		for _, t := range templates {
+			fmt.Printf("  %s:%s\n", t.PluginName, t.Name)
+		}
+	}
+	return nil
+}
+
+func runNew(app *App, listTemplates bool, name string, templateURL string, version string, renderer string, csharp bool, csharpExplicit bool, rendererExplicit bool) error {
+	if listTemplates {
+		return runListTemplates(app)
+	}
+
 	svc := engine.NewService(app.Home, app.Platform, app.Config)
 	installed, _ := svc.ListVersionStrings()
 	interactive := false
@@ -117,6 +145,36 @@ func runNew(app *App, name string, templateURL string, version string, renderer 
 
 	projectDir := filepath.Join(".", name)
 
+	pluginSvc := plugins.NewService(app.PluginsDir())
+	hookCtx := plugins.HookContext{
+		ProjectRoot:  filepath.Join(".", name),
+		GodotVersion: version,
+	}
+	if err := pluginSvc.RunHooks(plugins.BeforeNew, hookCtx); err != nil {
+		return err
+	}
+
+	// Check if template is from a plugin
+	if templateURL != "" && templateURL != "2d" && templateURL != "3d" && !strings.Contains(templateURL, "/") && !strings.Contains(templateURL, "http") {
+		pluginTemplates, _ := pluginSvc.DiscoverTemplates()
+		var items []plugins.NamespacedItem
+		for _, t := range pluginTemplates {
+			items = append(items, plugins.NamespacedItem{
+				ShortName:     t.Name,
+				QualifiedName: t.PluginName + ":" + t.Name,
+				Data:          t,
+			})
+		}
+		if resolved, resolveErr := plugins.ResolveNamespace(templateURL, items); resolveErr == nil {
+			pt := resolved.Data.(plugins.PluginTemplate)
+			fmt.Fprintf(os.Stderr, "Creating project from plugin template %s:%s...\n", pt.PluginName, pt.Name)
+			if err := project.CopyTemplate(pt.Dir, projectDir, name, version); err != nil {
+				return err
+			}
+			templateURL = "" // skip built-in template handling
+		}
+	}
+
 	if templateURL == "2d" || templateURL == "3d" {
 		fmt.Fprintf(os.Stderr, "Creating %s project from built-in template...\n", templateURL)
 		if err := project.GenerateFromTemplate(templateURL, projectDir, name, version); err != nil {
@@ -140,6 +198,10 @@ func runNew(app *App, name string, templateURL string, version string, renderer 
 		}); err != nil {
 			return err
 		}
+	}
+
+	if err := pluginSvc.RunHooks(plugins.AfterNew, hookCtx); err != nil {
+		return err
 	}
 
 	fmt.Fprintf(os.Stderr, "Project %s created\n", name)
