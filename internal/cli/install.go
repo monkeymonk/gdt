@@ -7,6 +7,7 @@ import (
 
 	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/metadata"
+	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/spf13/cobra"
 )
 
@@ -65,6 +66,14 @@ func newInstallCmd(app *App) *cobra.Command {
 
 			fmt.Fprintf(os.Stderr, "Godot %s installed\n", result.VersionName)
 			fmt.Fprintf(os.Stderr, "\n  Hint: install export templates with: gdt templates install %s\n", result.Version)
+
+			pluginSvc := plugins.NewService(app.PluginsDir())
+			enginePath, _ := svc.BinaryPath(result.VersionName)
+			hookCtx := plugins.HookContext{
+				GodotVersion: result.VersionName,
+				EnginePath:   enginePath,
+			}
+			_ = pluginSvc.RunHooks(plugins.AfterInstall, hookCtx)
 			return nil
 		},
 	}
