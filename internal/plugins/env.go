@@ -6,14 +6,19 @@ type EnvContext struct {
 	ProjectRoot  string
 	GodotVersion string
 	EnginePath   string
+	HookEvent    string
 }
 
 // BuildEnv constructs the environment variable slice for plugin subprocesses.
 func BuildEnv(ctx EnvContext) []string {
-	return []string{
+	env := []string{
 		"GDT_HOME=" + ctx.Home,
 		"GDT_PROJECT_ROOT=" + ctx.ProjectRoot,
 		"GDT_GODOT_VERSION=" + ctx.GodotVersion,
 		"GDT_ENGINE_PATH=" + ctx.EnginePath,
 	}
+	if ctx.HookEvent != "" {
+		env = append(env, "GDT_HOOK_EVENT="+ctx.HookEvent)
+	}
+	return env
 }
