@@ -6,6 +6,7 @@ import (
 
 	"github.com/monkeymonk/gdt/internal/config"
 	"github.com/monkeymonk/gdt/internal/engine"
+	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/spf13/cobra"
 )
 
@@ -44,6 +45,12 @@ func newUseCmd(app *App) *cobra.Command {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Default version set to %s\n", version)
+
+			pluginSvc := plugins.NewService(app.PluginsDir())
+			hookCtx := plugins.HookContext{
+				GodotVersion: version,
+			}
+			_ = pluginSvc.RunHooks(plugins.AfterUse, hookCtx)
 			return nil
 		},
 	}
