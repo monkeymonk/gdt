@@ -1,12 +1,15 @@
 package cli
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 
+	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/spf13/cobra"
 )
 
-func newCompletionCmd() *cobra.Command {
+func newCompletionCmd(app *App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",
 		Short: "Generate shell completion script",
@@ -20,15 +23,33 @@ func newCompletionCmd() *cobra.Command {
 		Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 		DisableFlagsInUseLine: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			switch args[0] {
+			shell := args[0]
+			var err error
+			switch shell {
 			case "bash":
-				return cmd.Root().GenBashCompletion(os.Stdout)
+				err = cmd.Root().GenBashCompletion(os.Stdout)
 			case "zsh":
-				return cmd.Root().GenZshCompletion(os.Stdout)
+				err = cmd.Root().GenZshCompletion(os.Stdout)
 			case "fish":
-				return cmd.Root().GenFishCompletion(os.Stdout, true)
+				err = cmd.Root().GenFishCompletion(os.Stdout, true)
 			case "powershell":
-				return cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
+				err = cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
+			}
+			if err != nil {
+				return err
+			}
+
+			// Append plugin completions
+			svc := plugins.NewService(app.PluginsDir())
+			for _, p := range svc.DiscoverCompletionPlugins() {
+				binPath := filepath.Join(p.Dir, p.Manifest.Name)
+				out, runErr := plugins.RunPluginSubcommand(
+					binPath, p.Dir, nil, plugins.DefaultHookTimeout, "completions", shell)
+				if runErr != nil {
+					fmt.Fprintf(os.Stderr, "warning: plugin %s completion failed: %s\n", p.Manifest.Name, runErr)
+					continue
+				}
+				fmt.Fprint(os.Stdout, out)
 			}
 			return nil
 		},

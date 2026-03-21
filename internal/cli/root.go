@@ -59,7 +59,7 @@ func NewRootCmd(app *App) *cobra.Command {
 		newDapCmd(app),
 		newExportCmd(app),
 		newCiCmd(app),
-		newCompletionCmd(),
+		newCompletionCmd(app),
 	)
 
 	// Plugin dispatch for unknown commands
