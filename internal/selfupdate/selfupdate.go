@@ -20,7 +20,7 @@ type Result struct {
 
 // Update checks for and applies the latest gdt release.
 func Update(ctx context.Context, currentVersion string) (*Result, error) {
-	token := os.Getenv("GDT_GITHUB_TOKEN")
+	token := os.Getenv("GITHUB_TOKEN")
 
 	release, err := metadata.FetchLatestRelease(apiURL, token)
 	if err != nil {
@@ -34,9 +34,9 @@ func Update(ctx context.Context, currentVersion string) (*Result, error) {
 
 	artifact := fmt.Sprintf("gdt-%s-%s-%s", latestVersion, runtime.GOOS, runtime.GOARCH)
 	var downloadURL string
-	for _, a := range release.Assets {
-		if a.Name == artifact+".tar.gz" || a.Name == artifact+".zip" {
-			downloadURL = a.URL
+	for name, url := range release.Assets {
+		if name == artifact+".tar.gz" || name == artifact+".zip" {
+			downloadURL = url
 			break
 		}
 	}

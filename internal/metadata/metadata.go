@@ -50,7 +50,7 @@ func FetchReleases(apiURL string, token string) ([]Release, error) {
 		return nil, fmt.Errorf("GitHub API error %d: %s", resp.StatusCode, string(body))
 	}
 
-	var ghReleases []GitHubRelease
+	var ghReleases []githubRelease
 	if err := json.NewDecoder(resp.Body).Decode(&ghReleases); err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func FetchReleases(apiURL string, token string) ([]Release, error) {
 	return releases, nil
 }
 
-func parseRelease(ghr GitHubRelease) *Release {
+func parseRelease(ghr githubRelease) *Release {
 	tag := ghr.TagName
 	if !strings.HasSuffix(tag, "-stable") {
 		return nil
@@ -140,28 +140,29 @@ func EnsureCache(cachePath string, apiURL string, token string, forceRefresh boo
 }
 
 func ResolveVersion(releases []Release, query string) (*Release, error) {
-	if query == "latest" || query == "stable" {
+	isAlias := query == "latest" || query == "stable"
+
+	for i := range releases {
+		r := &releases[i]
+		if isAlias && r.Stable {
+			return r, nil
+		}
+		if !isAlias && r.Version == query {
+			return r, nil
+		}
+	}
+
+	// Prefix match (e.g. "4.2" → "4.2.2") — only for non-alias queries
+	if !isAlias {
 		for i := range releases {
-			if releases[i].Stable {
+			if releases[i].Stable && strings.HasPrefix(releases[i].Version, query) {
 				return &releases[i], nil
 			}
 		}
+	}
+
+	if isAlias {
 		return nil, fmt.Errorf("no stable version found")
 	}
-
-	// Exact match
-	for i := range releases {
-		if releases[i].Version == query {
-			return &releases[i], nil
-		}
-	}
-
-	// Prefix match (4.2 -> 4.2.2, 4 -> 4.3)
-	for i := range releases {
-		if releases[i].Stable && strings.HasPrefix(releases[i].Version, query) {
-			return &releases[i], nil
-		}
-	}
-
 	return nil, fmt.Errorf("version %q not found\n\n  Run: gdt ls-remote", query)
 }
