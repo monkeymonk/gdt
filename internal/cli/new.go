@@ -13,6 +13,54 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// resolveTemplate determines the template source and creates the project.
+// It handles plugin template lookup, built-in templates, git clone, and minimal scaffold.
+func resolveTemplate(templateURL string, pluginSvc *plugins.Service, projectDir string, name string, version string, renderer string, csharp bool) error {
+	// Check if template is from a plugin (core built-ins take priority)
+	isBuiltin := false
+	for _, bt := range project.AvailableTemplates() {
+		if templateURL == bt {
+			isBuiltin = true
+			break
+		}
+	}
+	if templateURL != "" && !isBuiltin && !strings.Contains(templateURL, "/") && !strings.Contains(templateURL, "http") {
+		pluginTemplates, _ := pluginSvc.DiscoverTemplates()
+		var items []plugins.NamespacedItem
+		for _, t := range pluginTemplates {
+			items = append(items, plugins.NamespacedItem{
+				ShortName:     t.Name,
+				QualifiedName: t.PluginName + ":" + t.Name,
+				Data:          t,
+			})
+		}
+		if resolved, resolveErr := plugins.ResolveNamespace(templateURL, items); resolveErr == nil {
+			pt := resolved.Data.(plugins.PluginTemplate)
+			fmt.Fprintf(os.Stderr, "Creating project from plugin template %s:%s...\n", pt.PluginName, pt.Name)
+			return project.CopyTemplate(pt.Dir, projectDir, name, version)
+		}
+	}
+
+	if templateURL == "2d" || templateURL == "3d" {
+		fmt.Fprintf(os.Stderr, "Creating %s project from built-in template...\n", templateURL)
+		return project.GenerateFromTemplate(templateURL, projectDir, name, version)
+	} else if templateURL != "" {
+		fmt.Fprintf(os.Stderr, "Creating project from template...\n")
+		return project.CloneTemplate(templateURL, projectDir, version)
+	}
+
+	if renderer == "" {
+		renderer = "forward_plus"
+	}
+	return project.Generate(project.ScaffoldOptions{
+		Name:     name,
+		Version:  version,
+		Renderer: renderer,
+		Dir:      projectDir,
+		CSharp:   csharp,
+	})
+}
+
 func newNewCmd(app *App) *cobra.Command {
 	var templateURL string
 	var version string
@@ -157,57 +205,8 @@ func runNew(app *App, listTemplates bool, name string, templateURL string, versi
 		return err
 	}
 
-	// Check if template is from a plugin (core built-ins take priority)
-	isBuiltin := false
-	for _, bt := range project.AvailableTemplates() {
-		if templateURL == bt {
-			isBuiltin = true
-			break
-		}
-	}
-	if templateURL != "" && !isBuiltin && !strings.Contains(templateURL, "/") && !strings.Contains(templateURL, "http") {
-		pluginTemplates, _ := pluginSvc.DiscoverTemplates()
-		var items []plugins.NamespacedItem
-		for _, t := range pluginTemplates {
-			items = append(items, plugins.NamespacedItem{
-				ShortName:     t.Name,
-				QualifiedName: t.PluginName + ":" + t.Name,
-				Data:          t,
-			})
-		}
-		if resolved, resolveErr := plugins.ResolveNamespace(templateURL, items); resolveErr == nil {
-			pt := resolved.Data.(plugins.PluginTemplate)
-			fmt.Fprintf(os.Stderr, "Creating project from plugin template %s:%s...\n", pt.PluginName, pt.Name)
-			if err := project.CopyTemplate(pt.Dir, projectDir, name, version); err != nil {
-				return err
-			}
-			templateURL = "" // skip built-in template handling
-		}
-	}
-
-	if templateURL == "2d" || templateURL == "3d" {
-		fmt.Fprintf(os.Stderr, "Creating %s project from built-in template...\n", templateURL)
-		if err := project.GenerateFromTemplate(templateURL, projectDir, name, version); err != nil {
-			return err
-		}
-	} else if templateURL != "" {
-		fmt.Fprintf(os.Stderr, "Creating project from template...\n")
-		if err := project.CloneTemplate(templateURL, projectDir, version); err != nil {
-			return err
-		}
-	} else {
-		if renderer == "" {
-			renderer = "forward_plus"
-		}
-		if err := project.Generate(project.ScaffoldOptions{
-			Name:     name,
-			Version:  version,
-			Renderer: renderer,
-			Dir:      projectDir,
-			CSharp:   csharp,
-		}); err != nil {
-			return err
-		}
+	if err := resolveTemplate(templateURL, pluginSvc, projectDir, name, version, renderer, csharp); err != nil {
+		return err
 	}
 
 	if err := pluginSvc.RunHooks(plugins.AfterNew, hookCtx); err != nil {

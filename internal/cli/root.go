@@ -8,7 +8,6 @@ import (
 
 	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/plugins"
-	"github.com/monkeymonk/gdt/internal/project"
 	"github.com/spf13/cobra"
 )
 
@@ -73,16 +72,14 @@ func dispatchPlugin(app *App, p plugins.Plugin, args []string) {
 	cmd.Stderr = os.Stderr
 
 	cwd, _ := os.Getwd()
-	projectRoot, _ := project.DetectRoot(cwd)
-
 	svc := engine.NewService(app.Home, app.Platform, app.Config)
-	resolved, _ := svc.Resolve(cwd)
+	projectRoot, rv, _ := svc.ResolveProject(cwd)
 
 	cmd.Env = append(os.Environ(), plugins.BuildEnv(plugins.EnvContext{
 		Home:         app.Home,
 		ProjectRoot:  projectRoot,
-		GodotVersion: resolved.Version,
-		EnginePath:   resolved.BinaryPath,
+		GodotVersion: rv.Version,
+		EnginePath:   rv.BinaryPath,
 	})...)
 
 	cmd.Run()

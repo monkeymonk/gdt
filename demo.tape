@@ -110,16 +110,6 @@ Type "gdt plugin list"
 Enter
 Sleep 3s
 
-# Cleanup (hidden)
-Hide
-Type "cd ~"
-Enter
-Sleep 1s
-Type "rm -rf /tmp/gdt-demo"
-Enter
-Sleep 2s
-Show
-
 # -------- Outro --------
 Type `# Documentation: https://github.com/monkeymonk/gdt`
 Enter
