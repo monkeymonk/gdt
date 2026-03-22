@@ -92,20 +92,10 @@ func dispatchPlugin(app *App, p plugins.Plugin, args []string) {
 // Used by lsp, dap, and export commands.
 func resolveProjectVersion(app *App) (root string, version string, binPath string, err error) {
 	cwd, _ := os.Getwd()
-	root, err = project.DetectRoot(cwd)
-	if err != nil {
-		err = fmt.Errorf("no Godot project found\n\n  Run from a directory containing project.godot")
-		return
-	}
-
 	svc := engine.NewService(app.Home, app.Platform, app.Config)
-	resolved, resolveErr := svc.Resolve(cwd)
+	projectRoot, rv, resolveErr := svc.ResolveProject(cwd)
 	if resolveErr != nil {
-		err = resolveErr
-		return
+		return "", "", "", resolveErr
 	}
-
-	version = resolved.Version
-	binPath = resolved.BinaryPath
-	return
+	return projectRoot, rv.Version, rv.BinaryPath, nil
 }
