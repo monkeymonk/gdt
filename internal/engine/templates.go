@@ -36,10 +36,9 @@ func (s *Service) RemoveTemplates(version string) error {
 
 // InstallTemplates downloads and extracts export templates for the given version.
 func (s *Service) InstallTemplates(ctx context.Context, query string, opts InstallOpts) (*InstallResult, error) {
-	apiURL := "https://api.github.com/repos/godotengine/godot/releases"
 	return s.downloadAndInstall(ctx, downloadSpec{
 		CachePath: s.CachePath(),
-		APIURL:    apiURL,
+		APIURL:    s.Config.GodotAPIURL(),
 		Token:     os.Getenv("GITHUB_TOKEN"),
 		Query:     query,
 		Mono:      opts.Mono,

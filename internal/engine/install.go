@@ -8,13 +8,11 @@ import (
 	"github.com/monkeymonk/gdt/internal/platform"
 )
 
-const apiURL = "https://api.github.com/repos/godotengine/godot/releases"
-
 // Install downloads and installs a Godot engine version.
 func (s *Service) Install(ctx context.Context, version string, opts InstallOpts) (*InstallResult, error) {
 	return s.downloadAndInstall(ctx, downloadSpec{
 		CachePath: s.CachePath(),
-		APIURL:    apiURL,
+		APIURL:    s.Config.GodotAPIURL(),
 		Token:     os.Getenv("GITHUB_TOKEN"),
 		Query:     version,
 		Mono:      opts.Mono,

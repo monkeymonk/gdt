@@ -15,7 +15,7 @@ func newLsRemoteCmd(app *App) *cobra.Command {
 		Use:   "ls-remote",
 		Short: "List available remote versions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			releases, err := metadata.EnsureCache(app.EngineSvc().CachePath(), "https://api.github.com/repos/godotengine/godot/releases", os.Getenv("GITHUB_TOKEN"), refresh)
+			releases, err := metadata.EnsureCache(app.EngineSvc().CachePath(), app.Config.GodotAPIURL(), os.Getenv("GITHUB_TOKEN"), refresh)
 			if err != nil {
 				return err
 			}

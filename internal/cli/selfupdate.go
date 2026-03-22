@@ -18,7 +18,7 @@ func newSelfUpdateCmd(app *App) *cobra.Command {
 		Use:   "update",
 		Short: "Update gdt to the latest version",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			result, err := selfupdate.Update(context.Background(), app.Version)
+			result, err := selfupdate.Update(context.Background(), app.Version, app.Config.SelfUpdateAPIURL())
 			if err != nil {
 				return err
 			}
