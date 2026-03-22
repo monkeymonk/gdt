@@ -623,7 +623,7 @@ When the primary GitHub download URL is unavailable, gdt tries configured mirror
 |---|---|
 | `GDT_HOME` | Override base directory (default: `~/.gdt`) |
 | `GDT_GODOT_VERSION` | Override resolved engine version |
-| `GDT_GITHUB_TOKEN` | GitHub API token (avoids rate limits) |
+| `GITHUB_TOKEN` | GitHub API token (avoids rate limits) |
 | `GDT_DEBUG` | Enable debug logging (`1` to enable) |
 
 ---
