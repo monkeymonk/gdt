@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/monkeymonk/gdt/internal/config"
 	"github.com/monkeymonk/gdt/internal/engine"
@@ -19,6 +20,7 @@ type App struct {
 }
 
 func NewApp(version string) (*App, error) {
+	version = strings.TrimPrefix(version, "v")
 	plat := platform.Detect()
 	home := config.ResolveHome()
 

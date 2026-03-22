@@ -156,7 +156,7 @@ func CopyTemplate(srcDir string, destDir string, name string, version string) er
 }
 
 func CloneTemplate(repoURL string, destDir string, version string) error {
-	if !strings.HasPrefix(repoURL, "http") && !strings.HasPrefix(repoURL, "/") {
+	if !strings.HasPrefix(repoURL, "http") && !strings.HasPrefix(repoURL, "file://") && !strings.HasPrefix(repoURL, "/") {
 		repoURL = "https://github.com/" + repoURL
 	}
 

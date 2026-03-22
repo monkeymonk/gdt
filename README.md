@@ -7,7 +7,7 @@
 
 A cross-platform CLI to manage Godot Engine installations, scaffold projects, proxy LSP/DAP for editors, automate exports, and generate CI pipelines.
 
-![demo](https://github.com/monkeymonk/gdt/releases/download/v0.1.1/demo.gif)
+![demo](demo.gif)
 
 ## Features
 

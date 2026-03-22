@@ -21,15 +21,19 @@ Set TypingSpeed 80ms
 Set Framerate 60
 
 # Hidden setup: clean environment + prompt
-# Hide
-# Type "unalias gdt 2>/dev/null; true"
-# Enter
-# Type "rm -rf /tmp/gdt-demo"
-# Enter
-# Type "yes | /usr/local/bin/gdt remove 4.3 2>/dev/null; true"
-# Enter
-# Sleep 500ms
-# Show
+Hide
+Type `export PS1='$ '`
+Enter
+Type "export XDG_CONFIG_HOME=/tmp/alx-demo-vhs"
+Enter
+Type "rm -rf /tmp/alx-demo-vhs"
+Enter
+Type "export PATH=$PWD/bin:/usr/local/bin:/usr/bin:/bin"
+Enter
+Type "clear"
+Enter
+Sleep 500ms
+Show
 
 # -------- Intro Section --------
 Sleep 500ms

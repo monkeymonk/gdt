@@ -15,4 +15,3 @@ func Detect() Info {
 		Arch: runtime.GOARCH,
 	}
 }
-

@@ -283,7 +283,9 @@ func TestCloneTemplate(t *testing.T) {
 
 	destDir := filepath.Join(t.TempDir(), "mygame")
 
-	err := CloneTemplate(repoDir, destDir, "4.3")
+	// Use file:// URL so Windows paths with colons work as git remotes.
+	repoURL := "file://" + filepath.ToSlash(repoDir)
+	err := CloneTemplate(repoURL, destDir, "4.3")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -14,7 +14,11 @@ var gdtBinary string
 
 func TestMain(m *testing.M) {
 	dir, _ := os.MkdirTemp("", "gdt-test-*")
-	gdtBinary = filepath.Join(dir, "gdt")
+	bin := "gdt"
+	if runtime.GOOS == "windows" {
+		bin = "gdt.exe"
+	}
+	gdtBinary = filepath.Join(dir, bin)
 	cmd := exec.Command("go", "build", "-o", gdtBinary, "../cmd/gdt")
 	if err := cmd.Run(); err != nil {
 		panic("failed to build gdt: " + err.Error())
@@ -48,7 +52,11 @@ func setupFakeVersion(t *testing.T, home, ver string) {
 	t.Helper()
 	vDir := filepath.Join(home, "versions", ver)
 	os.MkdirAll(vDir, 0755)
-	os.WriteFile(filepath.Join(vDir, "godot"), []byte("fake"), 0755)
+	bin := "godot"
+	if runtime.GOOS == "windows" {
+		bin = "godot.exe"
+	}
+	os.WriteFile(filepath.Join(vDir, bin), []byte("fake"), 0755)
 }
 
 // setupFakePlugin creates a fake plugin with a manifest at $home/plugins/<name>/
@@ -277,7 +285,7 @@ func TestCiSetupGeneric(t *testing.T) {
 	if err != nil {
 		t.Error("CI file should exist")
 	}
-	if info.Mode()&0111 == 0 {
+	if runtime.GOOS != "windows" && info.Mode()&0111 == 0 {
 		t.Error("generic script should be executable")
 	}
 }
