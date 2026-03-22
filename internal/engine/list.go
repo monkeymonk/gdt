@@ -4,33 +4,23 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 )
 
 // List returns all installed Godot versions, sorted alphabetically.
 // The default version (from config) is marked with IsDefault=true.
 func (s *Service) List() ([]InstalledVersion, error) {
-	entries, err := os.ReadDir(s.versionsDir())
+	names, err := listDirectories(s.versionsDir())
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
 		return nil, err
 	}
-
 	var versions []InstalledVersion
-	for _, e := range entries {
-		if e.IsDir() {
-			versions = append(versions, InstalledVersion{
-				Version:   e.Name(),
-				IsDefault: e.Name() == s.Config.DefaultVersion,
-			})
-		}
+	for _, name := range names {
+		versions = append(versions, InstalledVersion{
+			Version:   name,
+			IsDefault: name == s.Config.DefaultVersion,
+		})
 	}
-	sort.Slice(versions, func(i, j int) bool {
-		return versions[i].Version < versions[j].Version
-	})
 	return versions, nil
 }
 

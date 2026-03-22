@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/monkeymonk/gdt/internal/download"
 	"github.com/monkeymonk/gdt/internal/config"
@@ -50,6 +51,26 @@ func (s *Service) versionsDir() string  { return filepath.Join(s.Home, "versions
 func (s *Service) templatesDir() string { return filepath.Join(s.Home, "templates") }
 func (s *Service) cacheDir() string     { return filepath.Join(s.Home, "cache") }
 func (s *Service) cachePath() string    { return filepath.Join(s.Home, "cache", "releases.json") }
+
+// listDirectories returns sorted names of all subdirectories in dir.
+// Returns nil, nil if dir does not exist.
+func listDirectories(dir string) ([]string, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var names []string
+	for _, e := range entries {
+		if e.IsDir() {
+			names = append(names, e.Name())
+		}
+	}
+	sort.Strings(names)
+	return names, nil
+}
 
 type downloadSpec struct {
 	CachePath       string
