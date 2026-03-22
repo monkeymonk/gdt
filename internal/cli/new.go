@@ -215,6 +215,6 @@ func runNew(app *App, listTemplates bool, name string, templateURL string, versi
 	}
 
 	fmt.Fprintf(os.Stderr, "Project %s created\n", name)
-	fmt.Fprintf(os.Stderr, "\n  cd %s\n  godot --editor\n", name)
+	fmt.Fprintf(os.Stderr, "\n  cd %s\n  gdt edit\n", name)
 	return nil
 }
