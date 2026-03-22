@@ -35,79 +35,78 @@ type PluginCIProvider struct {
 	FilePath   string // absolute path to CI config file
 }
 
-// DiscoverTemplates returns all templates contributed by installed plugins.
-// Skips templates whose directories don't exist on disk.
-func (s *Service) DiscoverTemplates() ([]PluginTemplate, error) {
+// contribution describes how to enumerate and resolve a contribution type T from a Plugin.
+type contribution[T any] struct {
+	names   func(p Plugin) []string
+	resolve func(p Plugin, name string) (T, bool)
+}
+
+// discoverContributions is the generic core used by DiscoverTemplates,
+// DiscoverPresets, and DiscoverCIProviders.
+func discoverContributions[T any](s *Service, c contribution[T]) ([]T, error) {
 	plugins, err := s.Discover()
 	if err != nil {
 		return nil, err
 	}
-
-	var templates []PluginTemplate
+	var result []T
 	for _, p := range plugins {
-		for _, name := range p.Manifest.Contributions.Templates {
+		for _, name := range c.names(p) {
+			if item, ok := c.resolve(p, name); ok {
+				result = append(result, item)
+			}
+		}
+	}
+	return result, nil
+}
+
+// DiscoverTemplates returns all templates contributed by installed plugins.
+// Skips templates whose directories don't exist on disk.
+func (s *Service) DiscoverTemplates() ([]PluginTemplate, error) {
+	return discoverContributions[PluginTemplate](s, contribution[PluginTemplate]{
+		names: func(p Plugin) []string { return p.Manifest.Contributions.Templates },
+		resolve: func(p Plugin, name string) (PluginTemplate, bool) {
 			dir := filepath.Join(p.Dir, "templates", name)
 			if !inPluginDir(p.Dir, dir) {
 				slog.Warn("plugin declares template with invalid path, skipping",
 					"plugin", p.Manifest.Name, "template", name)
-				continue
+				return PluginTemplate{}, false
 			}
 			if _, err := os.Stat(dir); os.IsNotExist(err) {
 				slog.Warn("plugin declares template but directory missing",
 					"plugin", p.Manifest.Name, "template", name, "expected", dir)
-				continue
+				return PluginTemplate{}, false
 			}
-			templates = append(templates, PluginTemplate{
-				Name:       name,
-				PluginName: p.Manifest.Name,
-				Dir:        dir,
-			})
-		}
-	}
-	return templates, nil
+			return PluginTemplate{Name: name, PluginName: p.Manifest.Name, Dir: dir}, true
+		},
+	})
 }
 
 // DiscoverPresets returns all export presets contributed by installed plugins.
 func (s *Service) DiscoverPresets() ([]PluginPreset, error) {
-	plugins, err := s.Discover()
-	if err != nil {
-		return nil, err
-	}
-
-	var presets []PluginPreset
-	for _, p := range plugins {
-		for _, name := range p.Manifest.Contributions.Presets {
+	return discoverContributions[PluginPreset](s, contribution[PluginPreset]{
+		names: func(p Plugin) []string { return p.Manifest.Contributions.Presets },
+		resolve: func(p Plugin, name string) (PluginPreset, bool) {
 			fp := filepath.Join(p.Dir, "presets", name+".cfg")
 			if !inPluginDir(p.Dir, fp) {
 				slog.Warn("plugin declares preset with invalid path, skipping",
 					"plugin", p.Manifest.Name, "preset", name)
-				continue
+				return PluginPreset{}, false
 			}
 			if _, err := os.Stat(fp); os.IsNotExist(err) {
 				slog.Warn("plugin declares preset but file missing",
 					"plugin", p.Manifest.Name, "preset", name, "expected", fp)
-				continue
+				return PluginPreset{}, false
 			}
-			presets = append(presets, PluginPreset{
-				Name:       name,
-				PluginName: p.Manifest.Name,
-				FilePath:   fp,
-			})
-		}
-	}
-	return presets, nil
+			return PluginPreset{Name: name, PluginName: p.Manifest.Name, FilePath: fp}, true
+		},
+	})
 }
 
 // DiscoverCIProviders returns all CI providers contributed by installed plugins.
 func (s *Service) DiscoverCIProviders() ([]PluginCIProvider, error) {
-	plugins, err := s.Discover()
-	if err != nil {
-		return nil, err
-	}
-
-	var providers []PluginCIProvider
-	for _, p := range plugins {
-		for _, name := range p.Manifest.Contributions.CIProviders {
+	return discoverContributions[PluginCIProvider](s, contribution[PluginCIProvider]{
+		names: func(p Plugin) []string { return p.Manifest.Contributions.CIProviders },
+		resolve: func(p Plugin, name string) (PluginCIProvider, bool) {
 			// Try common extensions
 			var fp string
 			for _, ext := range []string{".yml", ".yaml", ".sh"} {
@@ -115,7 +114,7 @@ func (s *Service) DiscoverCIProviders() ([]PluginCIProvider, error) {
 				if !inPluginDir(p.Dir, candidate) {
 					slog.Warn("plugin declares CI provider with invalid path, skipping",
 						"plugin", p.Manifest.Name, "provider", name)
-					break
+					return PluginCIProvider{}, false
 				}
 				if _, err := os.Stat(candidate); err == nil {
 					fp = candidate
@@ -125,16 +124,11 @@ func (s *Service) DiscoverCIProviders() ([]PluginCIProvider, error) {
 			if fp == "" {
 				slog.Warn("plugin declares CI provider but file missing",
 					"plugin", p.Manifest.Name, "provider", name)
-				continue
+				return PluginCIProvider{}, false
 			}
-			providers = append(providers, PluginCIProvider{
-				Name:       name,
-				PluginName: p.Manifest.Name,
-				FilePath:   fp,
-			})
-		}
-	}
-	return providers, nil
+			return PluginCIProvider{Name: name, PluginName: p.Manifest.Name, FilePath: fp}, true
+		},
+	})
 }
 
 // DiscoverDoctorPlugins returns all plugins that declare doctor = true.
