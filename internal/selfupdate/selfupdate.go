@@ -10,8 +10,6 @@ import (
 	"github.com/monkeymonk/gdt/internal/metadata"
 )
 
-const apiURL = "https://api.github.com/repos/monkeymonk/gdt/releases/latest"
-
 // Result contains the outcome of an update attempt.
 type Result struct {
 	Updated    bool
@@ -19,7 +17,7 @@ type Result struct {
 }
 
 // Update checks for and applies the latest gdt release.
-func Update(ctx context.Context, currentVersion string) (*Result, error) {
+func Update(ctx context.Context, currentVersion string, apiURL string) (*Result, error) {
 	token := os.Getenv("GITHUB_TOKEN")
 
 	release, err := metadata.FetchLatestRelease(apiURL, token)

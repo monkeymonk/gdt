@@ -75,3 +75,24 @@ func TestSaveCreatesParentDirs(t *testing.T) {
 	}
 }
 
+func TestConfig_DefaultGodotAPIURL(t *testing.T) {
+	cfg := &Config{}
+	if cfg.GodotAPIURL() != "https://api.github.com/repos/godotengine/godot/releases" {
+		t.Errorf("unexpected default: %s", cfg.GodotAPIURL())
+	}
+}
+
+func TestConfig_DefaultSelfUpdateURL(t *testing.T) {
+	cfg := &Config{}
+	if cfg.SelfUpdateAPIURL() != "https://api.github.com/repos/monkeymonk/gdt/releases/latest" {
+		t.Errorf("unexpected default: %s", cfg.SelfUpdateAPIURL())
+	}
+}
+
+func TestConfig_CustomGodotAPIURL(t *testing.T) {
+	cfg := &Config{GodotAPI: "https://custom.api/releases"}
+	if cfg.GodotAPIURL() != "https://custom.api/releases" {
+		t.Errorf("unexpected: %s", cfg.GodotAPIURL())
+	}
+}
+

@@ -11,6 +11,27 @@ import (
 type Config struct {
 	DefaultVersion string   `toml:"default_version"`
 	Mirrors        []string `toml:"mirrors,omitempty"`
+	GodotAPI       string   `toml:"godot_api,omitempty"`
+	SelfUpdateAPI  string   `toml:"selfupdate_api,omitempty"`
+}
+
+const (
+	defaultGodotAPI      = "https://api.github.com/repos/godotengine/godot/releases"
+	defaultSelfUpdateAPI = "https://api.github.com/repos/monkeymonk/gdt/releases/latest"
+)
+
+func (c *Config) GodotAPIURL() string {
+	if c.GodotAPI != "" {
+		return c.GodotAPI
+	}
+	return defaultGodotAPI
+}
+
+func (c *Config) SelfUpdateAPIURL() string {
+	if c.SelfUpdateAPI != "" {
+		return c.SelfUpdateAPI
+	}
+	return defaultSelfUpdateAPI
 }
 
 func Load(path string) (*Config, error) {
