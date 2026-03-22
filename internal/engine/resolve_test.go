@@ -170,6 +170,31 @@ func TestResolve_FileTakesPrecedence(t *testing.T) {
 	}
 }
 
+// --- ResolveProject tests ---
+
+func TestResolveProject(t *testing.T) {
+	svc := testService(t)
+	setupFakeVersion(t, svc, "4.2.1")
+
+	projectDir := t.TempDir()
+	os.WriteFile(filepath.Join(projectDir, "project.godot"), []byte(""), 0o644)
+	os.WriteFile(filepath.Join(projectDir, ".godot-version"), []byte("4.2.1"), 0o644)
+
+	root, rv, err := svc.ResolveProject(projectDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if root != projectDir {
+		t.Errorf("expected root %s, got %s", projectDir, root)
+	}
+	if rv.Version != "4.2.1" {
+		t.Errorf("expected version 4.2.1, got %s", rv.Version)
+	}
+	if rv.Source != "file" {
+		t.Errorf("expected source file, got %s", rv.Source)
+	}
+}
+
 // --- ResolveInstalledVersion tests ---
 
 func TestResolveInstalledVersion_ExactMatch(t *testing.T) {

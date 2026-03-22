@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/monkeymonk/gdt/internal/download"
 	"github.com/monkeymonk/gdt/internal/config"
+	"github.com/monkeymonk/gdt/internal/download"
 	"github.com/monkeymonk/gdt/internal/metadata"
 	"github.com/monkeymonk/gdt/internal/platform"
+	"github.com/monkeymonk/gdt/internal/project"
 )
 
 type Service struct {
@@ -41,6 +42,18 @@ type ResolvedVersion struct {
 type InstalledVersion struct {
 	Version   string
 	IsDefault bool
+}
+
+func (s *Service) ResolveProject(cwd string) (projectRoot string, resolved ResolvedVersion, err error) {
+	projectRoot, err = project.DetectRoot(cwd)
+	if err != nil {
+		return "", ResolvedVersion{}, fmt.Errorf("no Godot project found\n\n  Run from a directory containing project.godot")
+	}
+	resolved, err = s.Resolve(cwd)
+	if err != nil {
+		return "", ResolvedVersion{}, err
+	}
+	return projectRoot, resolved, nil
 }
 
 func NewService(home string, plat platform.Info, cfg *config.Config) *Service {
