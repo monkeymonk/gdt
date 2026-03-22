@@ -29,5 +29,8 @@ Thumbs.db
 # Private notes
 DEVNOTES.md
 
+# Plugins (source, not installed)
+_plugins/
+
 # Go
 vendor/

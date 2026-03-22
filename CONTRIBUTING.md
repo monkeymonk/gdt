@@ -70,8 +70,6 @@ Plugins use the V2 protocol with a `[contributions]` table in `plugin.toml`. Sca
 gdt plugin new myplugin
 ```
 
-See `_plugins/` for example plugin sources.
-
 ## Reporting Issues
 
 - Use GitHub Issues
