@@ -95,4 +95,3 @@ func TestConfig_CustomGodotAPIURL(t *testing.T) {
 		t.Errorf("unexpected: %s", cfg.GodotAPIURL())
 	}
 }
-

@@ -12,8 +12,8 @@ type LatestRelease struct {
 }
 
 type githubRelease struct {
-	TagName string         `json:"tag_name"`
-	Assets  []githubAsset  `json:"assets"`
+	TagName string        `json:"tag_name"`
+	Assets  []githubAsset `json:"assets"`
 }
 
 type githubAsset struct {

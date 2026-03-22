@@ -65,12 +65,12 @@ func TestResolveEngineArtifact(t *testing.T) {
 	release := &Release{
 		Version: "4.3",
 		Assets: map[string]string{
-			"Godot_v4.3-stable_linux.x86_64.zip":              "https://example.com/linux.zip",
-			"Godot_v4.3-stable_macos.universal.zip":            "https://example.com/macos.zip",
-			"Godot_v4.3-stable_win64.exe.zip":                  "https://example.com/win.zip",
-			"Godot_v4.3-stable_mono_linux.x86_64.zip":          "https://example.com/mono_linux.zip",
-			"Godot_v4.3-stable_export_templates.tpz":           "https://example.com/templates.tpz",
-			"Godot_v4.3-stable_mono_export_templates.tpz":      "https://example.com/mono_templates.tpz",
+			"Godot_v4.3-stable_linux.x86_64.zip":          "https://example.com/linux.zip",
+			"Godot_v4.3-stable_macos.universal.zip":       "https://example.com/macos.zip",
+			"Godot_v4.3-stable_win64.exe.zip":             "https://example.com/win.zip",
+			"Godot_v4.3-stable_mono_linux.x86_64.zip":     "https://example.com/mono_linux.zip",
+			"Godot_v4.3-stable_export_templates.tpz":      "https://example.com/templates.tpz",
+			"Godot_v4.3-stable_mono_export_templates.tpz": "https://example.com/mono_templates.tpz",
 		},
 	}
 

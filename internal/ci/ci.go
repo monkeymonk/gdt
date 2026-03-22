@@ -1,6 +1,6 @@
 package ci
 
-import "path/filepath"
+import "path"
 
 type Provider struct {
 	Name  string
@@ -18,11 +18,11 @@ func Providers() []Provider {
 func OutputPath(provider string) string {
 	switch provider {
 	case "github":
-		return filepath.Join(".github", "workflows", "export.yml")
+		return path.Join(".github", "workflows", "export.yml")
 	case "gitlab":
 		return ".gitlab-ci.yml"
 	case "generic":
-		return filepath.Join("ci", "export.sh")
+		return path.Join("ci", "export.sh")
 	default:
 		return ""
 	}

@@ -60,4 +60,3 @@ func Save(path string, cfg *Config) error {
 	}
 	return os.WriteFile(path, buf.Bytes(), 0644)
 }
-

@@ -69,7 +69,6 @@ func File(ctx context.Context, url string, dest string, opts DownloadOpts) error
 	default:
 		return fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
 	}
-	defer f.Close()
 
 	total, _ := strconv.ParseInt(resp.Header.Get("Content-Length"), 10, 64)
 	if total > 0 && resp.StatusCode == http.StatusPartialContent {
@@ -82,6 +81,7 @@ func File(ctx context.Context, url string, dest string, opts DownloadOpts) error
 		n, readErr := resp.Body.Read(buf)
 		if n > 0 {
 			if _, err := f.Write(buf[:n]); err != nil {
+				f.Close()
 				return err
 			}
 			written += int64(n)
@@ -94,10 +94,16 @@ func File(ctx context.Context, url string, dest string, opts DownloadOpts) error
 			break
 		}
 		if readErr != nil {
+			f.Close()
 			return readErr
 		}
 	}
 	fmt.Fprintln(os.Stderr)
+
+	// Close file before rename to avoid "file in use" errors on Windows.
+	if err := f.Close(); err != nil {
+		return err
+	}
 
 	if opts.Resume {
 		return os.Rename(partialPath, dest)
