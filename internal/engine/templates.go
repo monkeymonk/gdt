@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/monkeymonk/gdt/internal/metadata"
@@ -14,21 +13,7 @@ import (
 
 // ListTemplates returns the names of all installed template sets, sorted alphabetically.
 func (s *Service) ListTemplates() ([]string, error) {
-	entries, err := os.ReadDir(s.templatesDir())
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	var names []string
-	for _, e := range entries {
-		if e.IsDir() {
-			names = append(names, e.Name())
-		}
-	}
-	sort.Strings(names)
-	return names, nil
+	return listDirectories(s.templatesDir())
 }
 
 // TemplatesInstalled checks whether templates for the given version are installed.
