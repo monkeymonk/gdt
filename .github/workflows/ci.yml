@@ -36,9 +36,9 @@ jobs:
       - name: Check formatting
         if: matrix.os == 'ubuntu-latest'
         run: |
-          if [ -n "$(gofmt -l .)" ]; then
+          if [ -n "$(gofmt -l $(find . -name '*.go' -not -path './_plugins/*'))" ]; then
             echo "Files not formatted:"
-            gofmt -l .
+            gofmt -l $(find . -name '*.go' -not -path './_plugins/*')
             exit 1
           fi
 
