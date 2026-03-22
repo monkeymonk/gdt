@@ -7,6 +7,8 @@
 
 A cross-platform CLI to manage Godot Engine installations, scaffold projects, proxy LSP/DAP for editors, automate exports, and generate CI pipelines.
 
+![demo](demo.gif)
+
 ## Features
 
 - Install and manage multiple Godot engine versions
@@ -43,6 +45,14 @@ irm https://raw.githubusercontent.com/monkeymonk/gdt/main/scripts/install.ps1 | 
 
 ```sh
 go install github.com/monkeymonk/gdt/cmd/gdt@latest
+```
+
+Or clone and build with version info:
+
+```sh
+git clone https://github.com/monkeymonk/gdt.git && cd gdt
+go build -ldflags "-s -w -X main.Version=$(git describe --tags --always)" -o gdt ./cmd/gdt
+sudo mv gdt /usr/local/bin/
 ```
 
 ## Shell Setup
