@@ -143,11 +143,14 @@ func runNew(app *App, listTemplates bool, name string, templateURL string, versi
 		}
 	}
 
-	projectDir := filepath.Join(".", name)
+	projectDir := name
+	if !filepath.IsAbs(name) {
+		projectDir = filepath.Join(".", name)
+	}
 
 	pluginSvc := plugins.NewService(app.PluginsDir())
 	hookCtx := plugins.HookContext{
-		ProjectRoot:  filepath.Join(".", name),
+		ProjectRoot:  projectDir,
 		GodotVersion: version,
 	}
 	if err := pluginSvc.RunHooks(plugins.BeforeNew, hookCtx); err != nil {

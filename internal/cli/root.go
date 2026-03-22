@@ -6,32 +6,17 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/monkeymonk/gdt/internal/project"
 	"github.com/spf13/cobra"
 )
 
-var (
-	styleBold    = lipgloss.NewStyle().Bold(true)
-	stylePrimary = lipgloss.NewStyle().Foreground(lipgloss.Color("69"))
-	styleDim     = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
-)
-
-func banner(version string) string {
-	return "\n" +
-		stylePrimary.Render("  ┌─┐┌┬┐┌┬┐") + "\n" +
-		stylePrimary.Render("  │ ┬ ││ │ ") + "\n" +
-		stylePrimary.Render("  └─┘─┴┘ ┴ ") + "  " + styleDim.Render("v"+version) + "\n\n" +
-		styleBold.Render("  Godot Developer Toolchain") + "\n"
-}
-
 func NewRootCmd(app *App) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "gdt",
 		Short:         "Godot Developer Toolchain",
-		Long:          banner(app.Version),
+		Long:          fmt.Sprintf("Godot Developer Toolchain (v%s)", app.Version),
 		Version:       app.Version,
 		SilenceUsage:  true,
 		SilenceErrors: true,

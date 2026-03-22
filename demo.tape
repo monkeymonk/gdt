@@ -1,59 +1,126 @@
-# VHS tape file - https://github.com/charmbracelet/vhs
-# Run: vhs demo.tape
+# ===============================
+#  Professional CLI Showcase
+#  Author: monkeymonk
+#  Project: gdt
+# ===============================
 
+# -------- Output --------
 Output demo.gif
 
+# -------- Terminal Look --------
 Set Shell "bash"
-Set FontSize 14
-Set Width 900
-Set Height 500
+Set FontSize 16
+Set Width 1200
+Set Height 750
 Set Theme "Catppuccin Mocha"
-Set TypingSpeed 50ms
+Set Padding 20
+Set CursorBlink true
 
-Type "gdt --version"
-Enter
-Sleep 1s
+# Optional: for slower, more polished feel
+Set TypingSpeed 80ms
+Set Framerate 60
 
-Type "# Install a Godot version"
-Enter
+# Hidden setup: clean environment + prompt
+# Hide
+# Type "unalias gdt 2>/dev/null; true"
+# Enter
+# Type "rm -rf /tmp/gdt-demo"
+# Enter
+# Type "yes | /usr/local/bin/gdt remove 4.3 2>/dev/null; true"
+# Enter
+# Sleep 500ms
+# Show
+
+# -------- Intro Section --------
 Sleep 500ms
+
+# Big clean intro
+Type `# gdt - A cross-platform CLI to manage Godot Engine installations`
+Enter
+Sleep 800ms
+
+# -------- Basic Usage --------
+Type "gdt --help"
+Enter
+Sleep 4s
+
+# List remote versions
+Type "gdt ls-remote"
+Enter
+Sleep 3s
+
+# Install a Godot version (hide download, show result)
 Type "gdt install 4.3"
 Enter
-Sleep 3s
-
-Type "# Set as global default"
-Enter
-Sleep 500ms
-Type "gdt use 4.3"
-Enter
 Sleep 1s
-
-Type "# Create a new project"
-Enter
-Sleep 500ms
-Type "gdt new mygame --version 4.3 --renderer forward_plus"
-Enter
+Hide
+Sleep 120s
+Show
 Sleep 2s
 
-Type "# Check what's inside"
-Enter
-Sleep 500ms
-Type "ls -la mygame/"
-Enter
-Sleep 2s
-
-Type "# List installed versions"
-Enter
-Sleep 500ms
+# List installed versions
 Type "gdt list"
 Enter
-Sleep 1s
+Sleep 2s
 
-Type "# Run diagnostics"
+# Create a new project
+Type "gdt new /tmp/gdt-demo/mygame --version 4.3 --renderer forward_plus"
 Enter
-Sleep 500ms
-Type "gdt doctor"
+Sleep 5s
+
+# Inspect project
+Type "ls -la /tmp/gdt-demo/mygame/"
 Enter
 Sleep 2s
 
+Type "cat /tmp/gdt-demo/mygame/.godot-version"
+Enter
+Sleep 2s
+
+# Work from inside the project
+Type "cd /tmp/gdt-demo/mygame"
+Enter
+
+# Pin a local version
+Type "gdt local 4.3"
+Enter
+Sleep 2s
+
+# Run diagnostics
+Type "gdt doctor"
+Enter
 Sleep 3s
+
+# Install export templates (hide download, show result)
+Type "gdt templates install 4.3"
+Enter
+Sleep 1s
+Hide
+Sleep 120s
+Show
+Sleep 2s
+
+# Generate CI pipeline
+Type "gdt ci setup --provider github"
+Enter
+Sleep 3s
+
+# Plugin management
+Type "gdt plugin list"
+Enter
+Sleep 3s
+
+# Cleanup (hidden)
+Hide
+Type "cd ~"
+Enter
+Sleep 1s
+Type "rm -rf /tmp/gdt-demo"
+Enter
+Sleep 2s
+Show
+
+# -------- Outro --------
+Type `# Documentation: https://github.com/monkeymonk/gdt`
+Enter
+Sleep 1500ms
