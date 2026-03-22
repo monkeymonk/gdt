@@ -26,5 +26,8 @@ coverage.html
 .DS_Store
 Thumbs.db
 
+# Private notes
+DEVNOTES.md
+
 # Go
 vendor/
