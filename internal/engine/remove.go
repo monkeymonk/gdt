@@ -16,7 +16,7 @@ func (s *Service) Remove(_ context.Context, version string) error {
 		}
 	}
 
-	dir := filepath.Join(s.versionsDir(), version)
+	dir := filepath.Join(s.VersionsDir(), version)
 	if err := os.RemoveAll(dir); err != nil {
 		return fmt.Errorf("failed to remove %s: %w", version, err)
 	}

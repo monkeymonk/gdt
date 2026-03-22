@@ -10,7 +10,7 @@ import (
 // List returns all installed Godot versions, sorted alphabetically.
 // The default version (from config) is marked with IsDefault=true.
 func (s *Service) List() ([]InstalledVersion, error) {
-	names, err := listDirectories(s.versionsDir())
+	names, err := listDirectories(s.VersionsDir())
 	if err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func (s *Service) ListVersionStrings() ([]string, error) {
 
 // IsInstalled checks whether the given version is installed.
 func (s *Service) IsInstalled(version string) bool {
-	_, err := os.Stat(filepath.Join(s.versionsDir(), version))
+	_, err := os.Stat(filepath.Join(s.VersionsDir(), version))
 	return err == nil
 }
 
@@ -47,7 +47,7 @@ func (s *Service) IsInstalled(version string) bool {
 // It first checks for a canonical name ("godot" / "godot.exe"), then scans for
 // the Godot_v* pattern. On Windows, _console variants are skipped.
 func (s *Service) BinaryPath(version string) (string, error) {
-	versionDir := filepath.Join(s.versionsDir(), version)
+	versionDir := filepath.Join(s.VersionsDir(), version)
 
 	// Try canonical name first
 	canonical := "godot"

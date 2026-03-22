@@ -19,7 +19,7 @@ func testService(t *testing.T) *Service {
 
 func setupFakeVersion(t *testing.T, svc *Service, version string) {
 	t.Helper()
-	dir := filepath.Join(svc.versionsDir(), version)
+	dir := filepath.Join(svc.VersionsDir(), version)
 	os.MkdirAll(dir, 0o755)
 	os.WriteFile(filepath.Join(dir, "Godot_v"+version+"-stable_linux.x86_64"), []byte("bin"), 0o755)
 }
@@ -114,7 +114,7 @@ func TestIsInstalled_False(t *testing.T) {
 
 func TestBinaryPath_Canonical(t *testing.T) {
 	svc := testService(t)
-	dir := filepath.Join(svc.versionsDir(), "4.2.1")
+	dir := filepath.Join(svc.VersionsDir(), "4.2.1")
 	os.MkdirAll(dir, 0o755)
 	os.WriteFile(filepath.Join(dir, "godot"), []byte("bin"), 0o755)
 
@@ -158,7 +158,7 @@ func TestBinaryPath_NotInstalled(t *testing.T) {
 func TestBinaryPath_NoBinary(t *testing.T) {
 	svc := testService(t)
 	// Create version dir but no binary
-	os.MkdirAll(filepath.Join(svc.versionsDir(), "4.2.1"), 0o755)
+	os.MkdirAll(filepath.Join(svc.VersionsDir(), "4.2.1"), 0o755)
 
 	_, err := svc.BinaryPath("4.2.1")
 	if err == nil {
@@ -176,7 +176,7 @@ func TestBinaryPath_NoBinary(t *testing.T) {
 func TestBinaryPath_SkipsConsoleOnWindows(t *testing.T) {
 	svc := testService(t)
 	svc.Platform.OS = "windows"
-	dir := filepath.Join(svc.versionsDir(), "4.2.1")
+	dir := filepath.Join(svc.VersionsDir(), "4.2.1")
 	os.MkdirAll(dir, 0o755)
 	// Create console variant first (alphabetically first)
 	os.WriteFile(filepath.Join(dir, "Godot_v4.2.1-stable_console.exe"), []byte("bin"), 0o755)
