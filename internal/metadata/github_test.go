@@ -8,9 +8,9 @@ import (
 )
 
 func TestFetchLatestRelease_Success(t *testing.T) {
-	expected := GitHubRelease{
+	fixture := githubRelease{
 		TagName: "v4.3.0",
-		Assets: []GitHubAsset{
+		Assets: []githubAsset{
 			{Name: "Godot_v4.3.0-stable_linux.x86_64.zip", URL: "https://example.com/godot.zip"},
 		},
 	}
@@ -19,7 +19,7 @@ func TestFetchLatestRelease_Success(t *testing.T) {
 			t.Errorf("missing Accept header")
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(expected)
+		json.NewEncoder(w).Encode(fixture)
 	}))
 	defer srv.Close()
 
@@ -27,10 +27,11 @@ func TestFetchLatestRelease_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if rel.TagName != expected.TagName {
-		t.Errorf("got tag %q, want %q", rel.TagName, expected.TagName)
+	if rel.TagName != fixture.TagName {
+		t.Errorf("got tag %q, want %q", rel.TagName, fixture.TagName)
 	}
-	if len(rel.Assets) != 1 || rel.Assets[0].Name != expected.Assets[0].Name {
+	wantName := fixture.Assets[0].Name
+	if _, ok := rel.Assets[wantName]; !ok || len(rel.Assets) != 1 {
 		t.Errorf("unexpected assets: %+v", rel.Assets)
 	}
 }
@@ -41,7 +42,7 @@ func TestFetchLatestRelease_WithToken(t *testing.T) {
 		if auth != "Bearer testtoken" {
 			t.Errorf("got Authorization %q, want Bearer testtoken", auth)
 		}
-		json.NewEncoder(w).Encode(GitHubRelease{TagName: "v4.3.0"})
+		json.NewEncoder(w).Encode(githubRelease{TagName: "v4.3.0"})
 	}))
 	defer srv.Close()
 

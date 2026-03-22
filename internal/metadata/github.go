@@ -6,17 +6,22 @@ import (
 	"net/http"
 )
 
-type GitHubRelease struct {
-	TagName string        `json:"tag_name"`
-	Assets  []GitHubAsset `json:"assets"`
+type LatestRelease struct {
+	TagName string
+	Assets  map[string]string // name → download URL
 }
 
-type GitHubAsset struct {
+type githubRelease struct {
+	TagName string         `json:"tag_name"`
+	Assets  []githubAsset  `json:"assets"`
+}
+
+type githubAsset struct {
 	Name string `json:"name"`
 	URL  string `json:"browser_download_url"`
 }
 
-func FetchLatestRelease(url string, token string) (*GitHubRelease, error) {
+func FetchLatestRelease(url string, token string) (*LatestRelease, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -33,9 +38,13 @@ func FetchLatestRelease(url string, token string) (*GitHubRelease, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("GitHub API returned %d", resp.StatusCode)
 	}
-	var rel GitHubRelease
+	var rel githubRelease
 	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
 		return nil, err
 	}
-	return &rel, nil
+	assets := make(map[string]string, len(rel.Assets))
+	for _, a := range rel.Assets {
+		assets[a.Name] = a.URL
+	}
+	return &LatestRelease{TagName: rel.TagName, Assets: assets}, nil
 }
