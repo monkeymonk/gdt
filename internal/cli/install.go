@@ -36,7 +36,7 @@ func newInstallCmd(app *App) *cobra.Command {
 				}
 			}
 			if query == "" && isTTY() {
-				releases, err := metadata.EnsureCache(app.CachePath(), "https://api.github.com/repos/godotengine/godot/releases", os.Getenv("GDT_GITHUB_TOKEN"), refresh)
+				releases, err := metadata.EnsureCache(svc.CachePath(), "https://api.github.com/repos/godotengine/godot/releases", os.Getenv("GITHUB_TOKEN"), refresh)
 				if err != nil {
 					return err
 				}

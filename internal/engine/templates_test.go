@@ -8,7 +8,7 @@ import (
 
 func setupFakeTemplates(t *testing.T, svc *Service, version string) {
 	t.Helper()
-	dir := filepath.Join(svc.templatesDir(), version)
+	dir := filepath.Join(svc.TemplatesDir(), version)
 	os.MkdirAll(dir, 0o755)
 	os.WriteFile(filepath.Join(dir, "dummy.tpz"), []byte("tpl"), 0o644)
 }
@@ -52,7 +52,7 @@ func TestListTemplates_Populated(t *testing.T) {
 func TestListTemplates_NoDir(t *testing.T) {
 	svc := testService(t)
 	// Remove the templates dir created by testService
-	os.RemoveAll(svc.templatesDir())
+	os.RemoveAll(svc.TemplatesDir())
 
 	list, err := svc.ListTemplates()
 	if err != nil {

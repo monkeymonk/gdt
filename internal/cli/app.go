@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/monkeymonk/gdt/internal/config"
+	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/platform"
 )
 
@@ -39,22 +40,10 @@ func NewApp(version string) (*App, error) {
 	}, nil
 }
 
-func (a *App) VersionsDir() string {
-	return filepath.Join(a.Home, "versions")
-}
-
-func (a *App) TemplatesDir() string {
-	return filepath.Join(a.Home, "templates")
-}
-
 func (a *App) PluginsDir() string {
 	return filepath.Join(a.Home, "plugins")
 }
 
-func (a *App) CacheDir() string {
-	return filepath.Join(a.Home, "cache")
-}
-
-func (a *App) CachePath() string {
-	return filepath.Join(a.CacheDir(), "releases.json")
+func (a *App) EngineSvc() *engine.Service {
+	return engine.NewService(a.Home, a.Platform, a.Config)
 }

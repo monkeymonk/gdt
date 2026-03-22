@@ -13,18 +13,18 @@ import (
 
 // ListTemplates returns the names of all installed template sets, sorted alphabetically.
 func (s *Service) ListTemplates() ([]string, error) {
-	return listDirectories(s.templatesDir())
+	return listDirectories(s.TemplatesDir())
 }
 
 // TemplatesInstalled checks whether templates for the given version are installed.
 func (s *Service) TemplatesInstalled(version string) bool {
-	_, err := os.Stat(filepath.Join(s.templatesDir(), version))
+	_, err := os.Stat(filepath.Join(s.TemplatesDir(), version))
 	return err == nil
 }
 
 // RemoveTemplates deletes installed export templates for the given version.
 func (s *Service) RemoveTemplates(version string) error {
-	dir := filepath.Join(s.templatesDir(), version)
+	dir := filepath.Join(s.TemplatesDir(), version)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return &ActionableError{
 			Err:        fmt.Errorf("templates for %s are not installed", version),
@@ -38,14 +38,14 @@ func (s *Service) RemoveTemplates(version string) error {
 func (s *Service) InstallTemplates(ctx context.Context, query string, opts InstallOpts) (*InstallResult, error) {
 	apiURL := "https://api.github.com/repos/godotengine/godot/releases"
 	return s.downloadAndInstall(ctx, downloadSpec{
-		CachePath: s.cachePath(),
+		CachePath: s.CachePath(),
 		APIURL:    apiURL,
 		Token:     os.Getenv("GITHUB_TOKEN"),
 		Query:     query,
 		Mono:      opts.Mono,
 		Force:     opts.Force,
 		Refresh:   opts.Refresh,
-		DestDir:   s.templatesDir(),
+		DestDir:   s.TemplatesDir(),
 		ResolveArtifact: func(release *metadata.Release, plat platform.Info, mono bool) (string, error) {
 			name := metadata.TemplateArtifactName(release.Version, mono)
 			if _, ok := release.Assets[name]; ok {

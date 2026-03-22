@@ -47,10 +47,10 @@ func NewService(home string, plat platform.Info, cfg *config.Config) *Service {
 	return &Service{Home: home, Platform: plat, Config: cfg}
 }
 
-func (s *Service) versionsDir() string  { return filepath.Join(s.Home, "versions") }
-func (s *Service) templatesDir() string { return filepath.Join(s.Home, "templates") }
-func (s *Service) cacheDir() string     { return filepath.Join(s.Home, "cache") }
-func (s *Service) cachePath() string    { return filepath.Join(s.Home, "cache", "releases.json") }
+func (s *Service) VersionsDir() string  { return filepath.Join(s.Home, "versions") }
+func (s *Service) TemplatesDir() string { return filepath.Join(s.Home, "templates") }
+func (s *Service) CacheDir() string     { return filepath.Join(s.Home, "cache") }
+func (s *Service) CachePath() string    { return filepath.Join(s.Home, "cache", "releases.json") }
 
 // listDirectories returns sorted names of all subdirectories in dir.
 // Returns nil, nil if dir does not exist.
@@ -127,7 +127,7 @@ func (s *Service) downloadAndInstall(ctx context.Context, spec downloadSpec) (*I
 		return nil, fmt.Errorf("artifact %q not found for version %s", artifactName, release.Version)
 	}
 
-	downloadDir := filepath.Join(s.cacheDir(), "downloads")
+	downloadDir := filepath.Join(s.CacheDir(), "downloads")
 
 	// 6. Download checksum file (best-effort, only if VerifyChecksum)
 	var expectedChecksum string
@@ -161,7 +161,7 @@ func (s *Service) downloadAndInstall(ctx context.Context, spec downloadSpec) (*I
 	}
 
 	// 9. Extract to tmpDir, then rename to destDir (atomic)
-	tmpDir := filepath.Join(s.cacheDir(), "tmp")
+	tmpDir := filepath.Join(s.CacheDir(), "tmp")
 	os.MkdirAll(tmpDir, 0755)
 	if err := download.ExtractZip(archivePath, tmpDir); err != nil {
 		return nil, fmt.Errorf("extraction failed: %w", err)

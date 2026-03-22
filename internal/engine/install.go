@@ -13,14 +13,14 @@ const apiURL = "https://api.github.com/repos/godotengine/godot/releases"
 // Install downloads and installs a Godot engine version.
 func (s *Service) Install(ctx context.Context, version string, opts InstallOpts) (*InstallResult, error) {
 	return s.downloadAndInstall(ctx, downloadSpec{
-		CachePath: s.cachePath(),
+		CachePath: s.CachePath(),
 		APIURL:    apiURL,
 		Token:     os.Getenv("GITHUB_TOKEN"),
 		Query:     version,
 		Mono:      opts.Mono,
 		Force:     opts.Force,
 		Refresh:   opts.Refresh,
-		DestDir:   s.versionsDir(),
+		DestDir:   s.VersionsDir(),
 		ResolveArtifact: func(release *metadata.Release, plat platform.Info, mono bool) (string, error) {
 			return metadata.ResolveEngineArtifact(release, plat, mono)
 		},
