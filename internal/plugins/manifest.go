@@ -32,6 +32,12 @@ type Contributions struct {
 	Completions bool     `toml:"completions"`
 }
 
+// Build declares how to compile or prepare the plugin binary.
+// If omitted, gdt auto-detects the build system.
+type Build struct {
+	Command string `toml:"command"`
+}
+
 type Manifest struct {
 	Name          string        `toml:"name"`
 	Version       string        `toml:"version"`
@@ -41,6 +47,7 @@ type Manifest struct {
 	Description   string        `toml:"description"`
 	Hooks         Hooks         `toml:"hooks"`
 	Contributions Contributions `toml:"contributions"`
+	Build         Build         `toml:"build"`
 }
 
 // HasContributions returns true if the manifest declares any contributions.

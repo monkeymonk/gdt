@@ -166,7 +166,7 @@ func newPluginNewCmd(app *App) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&lang, "lang", "shell", "Scaffold language: shell, go")
+	cmd.Flags().StringVar(&lang, "lang", "shell", "Scaffold language: shell, go, rust, python")
 	return cmd
 }
 
