@@ -111,8 +111,8 @@ func buildAssetCandidates(name, goos, goarch string) []string {
 	}
 
 	osAliases := map[string][]string{
-		"darwin": {"darwin", "macos"},
-		"linux":  {"linux"},
+		"darwin":  {"darwin", "macos"},
+		"linux":   {"linux"},
 		"windows": {"windows"},
 	}
 	oses := osAliases[goos]

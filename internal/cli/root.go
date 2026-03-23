@@ -46,18 +46,24 @@ func NewRootCmd(app *App) *cobra.Command {
 		newCompletionCmd(app),
 	)
 
-	// Plugin dispatch for unknown commands
+	// Register plugin commands as cobra subcommands
 	pluginSvc := plugins.NewService(app.PluginsDir())
-	origHelpFunc := root.HelpFunc()
-	root.SetHelpFunc(func(cmd *cobra.Command, args []string) {
-		if len(args) > 0 {
-			if p, ok := pluginSvc.FindForCommand(args[0]); ok {
-				dispatchPlugin(app, p, args[1:])
-				return
+	if pluginList, err := pluginSvc.Discover(); err == nil {
+		for _, p := range pluginList {
+			for _, cmdName := range p.Manifest.Commands {
+				plug := p // capture loop variable
+				root.AddCommand(&cobra.Command{
+					Use:                cmdName,
+					Short:              plug.Manifest.Description,
+					DisableFlagParsing: true,
+					RunE: func(cmd *cobra.Command, args []string) error {
+						dispatchPlugin(app, plug, args)
+						return nil
+					},
+				})
 			}
 		}
-		origHelpFunc(cmd, args)
-	})
+	}
 
 	return root
 }
