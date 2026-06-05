@@ -428,7 +428,7 @@ Install the [godot-tools](https://marketplace.visualstudio.com/items?itemName=ge
 }
 ```
 
-VS Code connects directly to Godot's TCP server — no proxy needed. Start Godot headless first: `gdt run --headless` or open the editor.
+VS Code connects directly to Godot's TCP server — no proxy needed (don't also run `gdt lsp`; that's only for editors without a direct connector). The LSP server is served by the **open Godot editor**, so launch it first with `gdt edit`. A plain `gdt run` game session does not expose the language server.
 
 #### Zed
 
@@ -461,51 +461,52 @@ In Zed settings (`~/.config/zed/settings.json`):
 
 #### Claude Code
 
+Claude Code consumes language servers through its **plugin** system — not `claude mcp add`. That command registers *MCP* servers, which speak a different protocol than LSP; pointing it at `gdt lsp` fails the handshake. Ship `gdt lsp` as a plugin LSP instead.
+
+Create a plugin directory with two files:
+
+`godot-lsp/.claude-plugin/plugin.json`:
+
+```json
+{
+  "name": "godot-lsp",
+  "version": "0.1.0",
+  "description": "GDScript LSP for Godot, proxied through `gdt lsp`."
+}
+```
+
+`godot-lsp/.lsp.json`:
+
+```json
+{
+  "gdscript": {
+    "command": "gdt",
+    "args": ["lsp"],
+    "extensionToLanguage": { ".gd": "gdscript" },
+    "transport": "stdio"
+  }
+}
+```
+
+Then load it for a session:
+
 ```sh
-claude mcp add godot-lsp --command gdt --args lsp
+claude --plugin-dir ./godot-lsp
 ```
 
-Or in `.mcp.json`:
+…or register it persistently via a local marketplace (`claude plugin marketplace add <dir>` then `claude plugin install godot-lsp@<marketplace>`).
 
-```json
-{
-  "mcpServers": {
-    "godot-lsp": {
-      "command": "gdt",
-      "args": ["lsp"]
-    }
-  }
-}
-```
+`gdt lsp` starts its own headless Godot instance for the LSP server, so nothing else needs to be running.
 
-#### Codex
+> Looking for *MCP* (editor control, running projects, capturing debug output for an AI agent)? That's a separate protocol — use a dedicated Godot MCP server such as [`@coding-solo/godot-mcp`](https://github.com/Coding-Solo/godot-mcp). `gdt` does not (yet) ship an MCP server.
 
-In `codex.json` or equivalent config:
+#### Codex / Gemini CLI
 
-```json
-{
-  "lsp": {
-    "gdscript": {
-      "command": ["gdt", "lsp"]
-    }
-  }
-}
-```
+Neither Codex CLI nor Gemini CLI currently supports spawning an LSP server from config — native LSP is an open feature request in both ([codex#8745](https://github.com/openai/codex/issues/8745), [gemini-cli#2465](https://github.com/google-gemini/gemini-cli/issues/2465)). Both *do* support **MCP** servers, so until native LSP lands, the way to surface `gdt lsp`'s code intelligence in these tools is to put it behind an **LSP→MCP bridge** and register that bridge as an MCP server in the tool's config (`~/.codex/config.toml`, `~/.gemini/settings.json`).
 
-#### Gemini CLI
+#### Other editors / tools
 
-```json
-{
-  "lsp": {
-    "gdscript": {
-      "command": "gdt",
-      "args": ["lsp"]
-    }
-  }
-}
-```
-
-For any tool that supports spawning an LSP server via stdio, use `gdt lsp` as the command. Add `--port <N>` to change the Godot TCP port, or `-C <path>` to specify the project directory.
+For any tool that supports spawning an LSP server via stdio (Zed, Helix, Emacs, Neovim, …), use `gdt lsp` as the command. Add `--port <N>` to change the Godot TCP port, or `-C <path>` to specify the project directory.
 
 ---
 
