@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-07-21
+
+### Fixed
+
+- Release binaries are now built with the latest Go 1.25.x patch release
+  (`go.mod` uses `go 1.25` plus `check-latest`), picking up standard-library
+  security fixes that the pinned `1.25.0` toolchain missed
+
+### Changed
+
+- CI `lint` job uses golangci-lint v2 (via `golangci-lint-action` v9) with a
+  curated linter set in `.golangci.yml`
+- Bumped GitHub Actions off the deprecated Node 20 runtime (`checkout`,
+  `setup-go`, `goreleaser-action`, `cosign-installer`)
+
 ## [0.2.0] - 2026-07-21
 
 ### Fixed
