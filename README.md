@@ -23,6 +23,7 @@ A cross-platform CLI to manage Godot Engine installations, scaffold projects, pr
 - Plugin ecosystem with lifecycle hooks
 - Download resume and mirror fallback support
 - SHA-256 checksum verification for all downloads
+- Cosign-signed releases with verifiable checksums (Sigstore keyless)
 - Diagnostic tooling (`gdt doctor`)
 - Shell completion (bash, zsh, fish, powershell)
 - Desktop launcher integration (Linux)
@@ -54,6 +55,25 @@ git clone https://github.com/monkeymonk/gdt.git && cd gdt
 go build -ldflags "-s -w -X main.Version=$(git describe --tags --always)" -o gdt ./cmd/gdt
 sudo mv gdt /usr/local/bin/
 ```
+
+Building from source requires Go 1.25 or newer.
+
+### Verifying releases
+
+Each release publishes a `checksums.txt` signed with [cosign](https://github.com/sigstore/cosign) keyless signing. To verify a downloaded release archive, first confirm the signature on `checksums.txt`, then check the archive against it:
+
+```sh
+cosign verify-blob \
+  --certificate checksums.txt.pem \
+  --signature checksums.txt.sig \
+  --certificate-identity-regexp 'https://github.com/monkeymonk/gdt/.github/workflows/release.yml@.*' \
+  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
+  checksums.txt
+
+sha256sum --check --ignore-missing checksums.txt
+```
+
+`gdt self update` performs this checksum verification automatically when the release includes `checksums.txt`.
 
 ## Shell Setup
 
