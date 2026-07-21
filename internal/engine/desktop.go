@@ -85,15 +85,6 @@ func (s *Service) removeDesktop() {
 	}
 }
 
-// isDesktopInstalled reports whether the .desktop file exists.
-func (s *Service) isDesktopInstalled() bool {
-	if runtime.GOOS != "linux" {
-		return false
-	}
-	_, err := os.Stat(filepath.Join(applicationsDir(), desktopFileName))
-	return err == nil
-}
-
 // installIcon writes the Godot icon to the appropriate location.
 // Returns the icon path. Best-effort: falls back to gdt home dir.
 func (s *Service) installIcon() string {

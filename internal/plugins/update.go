@@ -2,9 +2,7 @@ package plugins
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -71,12 +69,4 @@ func detectRepoSlug(dir string) string {
 		return parts[0] + "/" + parts[1]
 	}
 	return ""
-}
-
-// rebuildNeeded checks if the binary is missing or older than source files.
-// For now, always attempt resolve if no binary exists.
-func rebuildNeeded(dir string, m *Manifest) bool {
-	binPath := filepath.Join(dir, m.Name)
-	_, err := os.Stat(binPath)
-	return os.IsNotExist(err)
 }
