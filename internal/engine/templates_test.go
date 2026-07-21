@@ -1,9 +1,14 @@
 package engine
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/monkeymonk/gdt/internal/config"
+	"github.com/monkeymonk/gdt/internal/platform"
 )
 
 func setupFakeTemplates(t *testing.T, svc *Service, version string) {
@@ -75,5 +80,43 @@ func TestTemplatesInstalled_False(t *testing.T) {
 	svc := testService(t)
 	if svc.TemplatesInstalled("4.9.9") {
 		t.Error("expected templates to not be installed")
+	}
+}
+
+func TestRemoveTemplates_NotInstalled(t *testing.T) {
+	svc := NewService(t.TempDir(), platform.Info{OS: "linux", Arch: "amd64"}, &config.Config{})
+	err := svc.RemoveTemplates("4.3-stable")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	var ae *ActionableError
+	if !errors.As(err, &ae) {
+		t.Fatalf("expected *ActionableError, got %T", err)
+	}
+	if ae.Suggestion != "gdt templates list" {
+		t.Errorf("expected suggestion %q, got %q", "gdt templates list", ae.Suggestion)
+	}
+	if !strings.Contains(err.Error(), "4.3-stable") {
+		t.Errorf("expected error message to contain %q, got %q", "4.3-stable", err.Error())
+	}
+}
+
+func TestRemoveTemplates_Removes(t *testing.T) {
+	home := t.TempDir()
+	dir := filepath.Join(home, "templates", "4.3-stable")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatalf("failed to create dir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "dummy.tpz"), []byte("tpl"), 0644); err != nil {
+		t.Fatalf("failed to write file: %v", err)
+	}
+
+	svc := NewService(home, platform.Info{OS: "linux", Arch: "amd64"}, &config.Config{})
+	if err := svc.RemoveTemplates("4.3-stable"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Errorf("expected dir to no longer exist, stat err: %v", err)
 	}
 }

@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-07-21
+
+### Fixed
+
+- `gdt self update` now works: the release asset is matched against the published
+  (`v`-stripped) name, the downloaded archive is extracted, and the `gdt` binary
+  inside it is swapped in atomically (previously the archive was written over the
+  binary and the asset name never matched)
+
+### Added
+
+- SHA-256 checksum verification of the downloaded archive during `gdt self update`
+  when the release publishes `checksums.txt`
+- Keyless cosign signing of release `checksums.txt` (Sigstore), producing `.sig`
+  and `.pem` for verifiable release provenance
+
+### Changed
+
+- Build with Go 1.25 to pick up standard-library security fixes; CI and release
+  workflows now derive the Go version from `go.mod`
+- CI runs `golangci-lint` and `govulncheck`; added Dependabot for Go modules and
+  GitHub Actions
+- Upgraded `charmbracelet/huh` v0.8.0 → v1.0.0
+
 ## [0.1.3] - 2026-03-23
 
 ### Added
