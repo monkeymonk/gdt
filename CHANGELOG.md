@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-07-21
+
+### Changed
+
+- Release signing now uses the cosign/Sigstore bundle format: releases publish a
+  single `checksums.txt.bundle` instead of separate `.sig` and `.pem` files.
+  Verify with `cosign verify-blob --bundle checksums.txt.bundle ...` (see README)
+- `cosign-installer` upgraded to v4 (off deprecated Node 20)
+- `.goreleaser.yml` uses the `formats:` list syntax (replaces deprecated
+  `archives.format` / `format_overrides.format`)
+
 ## [0.2.1] - 2026-07-21
 
 ### Fixed

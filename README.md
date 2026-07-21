@@ -60,12 +60,11 @@ Building from source requires Go 1.25 or newer.
 
 ### Verifying releases
 
-Each release publishes a `checksums.txt` signed with [cosign](https://github.com/sigstore/cosign) keyless signing. To verify a downloaded release archive, first confirm the signature on `checksums.txt`, then check the archive against it:
+Each release publishes a `checksums.txt` signed with [cosign](https://github.com/sigstore/cosign) keyless signing (Sigstore bundle format). To verify a downloaded release archive, first confirm the signature on `checksums.txt`, then check the archive against it:
 
 ```sh
 cosign verify-blob \
-  --certificate checksums.txt.pem \
-  --signature checksums.txt.sig \
+  --bundle checksums.txt.bundle \
   --certificate-identity-regexp 'https://github.com/monkeymonk/gdt/.github/workflows/release.yml@.*' \
   --certificate-oidc-issuer 'https://token.actions.githubusercontent.com' \
   checksums.txt
