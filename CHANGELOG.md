@@ -18,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI `lint` job uses golangci-lint v2 (via `golangci-lint-action` v9) with a
   curated linter set in `.golangci.yml`
 - Bumped GitHub Actions off the deprecated Node 20 runtime (`checkout`,
-  `setup-go`, `goreleaser-action`, `cosign-installer`)
+  `setup-go`, `goreleaser-action`); `cosign-installer` stays on v3 for
+  compatibility with the current signing recipe
 
 ## [0.2.0] - 2026-07-21
 
