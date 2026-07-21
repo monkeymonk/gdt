@@ -21,6 +21,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          check-latest: true
 
       - name: Build
         run: go build ./...
@@ -56,9 +57,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          check-latest: true
 
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
           version: latest
 
@@ -70,6 +72,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          check-latest: true
 
       - name: govulncheck
         run: |
