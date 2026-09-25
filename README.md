@@ -715,6 +715,11 @@ The `protocol` field determines the plugin interface:
 - **Protocol 1** (default if absent): Legacy shell-string hooks via `[hooks]` table
 - **Protocol 2**: Structured contributions via `[contributions]` table with subcommand protocol
 
+`requires_gdt` is enforced at `gdt plugin install` time: only the
+`>=X.Y[.Z]` form is supported, and installing a plugin whose
+constraint the running `gdt` version doesn't satisfy is rejected with
+an actionable error rather than installed silently.
+
 ### Contributions
 
 | Type | Manifest Key | Mechanism |

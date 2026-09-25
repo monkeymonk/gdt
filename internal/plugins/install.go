@@ -9,9 +9,11 @@ import (
 )
 
 // Install clones a plugin from a Git repository into the plugins directory,
-// then resolves the binary (download release or build from source).
-// Returns the parsed manifest on success.
-func (s *Service) Install(repo string) (*Manifest, error) {
+// checks the manifest's requires_gdt constraint against gdtVersion (the
+// running gdt version; pass "" or "dev" to skip the check for an
+// unversioned build), then resolves the binary (download release or build
+// from source). Returns the parsed manifest on success.
+func (s *Service) Install(repo, gdtVersion string) (*Manifest, error) {
 	repoURL := repo
 	if !strings.HasPrefix(repo, "http") {
 		repoURL = "https://github.com/" + repo
@@ -43,6 +45,11 @@ func (s *Service) Install(repo string) (*Manifest, error) {
 	if err != nil {
 		os.RemoveAll(destDir)
 		return nil, fmt.Errorf("invalid plugin manifest: %w", err)
+	}
+
+	if err := checkRequiresGdt(name, m.RequiresGdt, gdtVersion); err != nil {
+		os.RemoveAll(destDir)
+		return nil, err
 	}
 
 	// Resolve binary: download release → build from source → already present

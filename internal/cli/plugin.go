@@ -51,7 +51,7 @@ func newPluginInstallCmd(app *App) *cobra.Command {
 			}
 			svc := plugins.NewService(app.PluginsDir())
 			fmt.Fprintf(os.Stderr, "Installing plugin...\n")
-			m, err := svc.Install(repo)
+			m, err := svc.Install(repo, app.Version)
 			if err != nil {
 				return err
 			}

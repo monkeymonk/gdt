@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `gdt plugin install` now actually enforces a plugin's `requires_gdt`
+  version constraint instead of silently ignoring it — a plugin
+  declaring a constraint the running `gdt` version doesn't satisfy is
+  now rejected with an actionable error (`gdt self update`) instead of
+  installing anyway. Only the `>=X.Y[.Z]` form is supported. An
+  unversioned (`dev`) build always skips the check. This affects new
+  installs only — a plugin already installed under the old, unenforced
+  behavior is unaffected until its next `gdt plugin install`/reinstall.
+
 ## [0.3.0] - 2026-09-25
 
 ### Fixed
