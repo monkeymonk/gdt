@@ -67,11 +67,20 @@ func FetchReleases(apiURL string, token string) ([]Release, error) {
 		}
 	}
 
+	sortReleasesDescending(releases)
+
+	return releases, nil
+}
+
+// sortReleasesDescending sorts releases newest to oldest in place,
+// using the same numeric version comparison as CompareVersions. Used
+// wherever a []Release is returned to a caller, regardless of whether
+// it came from a fresh fetch or the on-disk cache — a cache written
+// before this ordering existed must not silently stay unsorted.
+func sortReleasesDescending(releases []Release) {
 	sort.Slice(releases, func(i, j int) bool {
 		return CompareVersions(releases[i].Version, releases[j].Version) > 0
 	})
-
-	return releases, nil
 }
 
 func parseRelease(ghr githubRelease) *Release {
@@ -123,6 +132,7 @@ func EnsureCache(cachePath string, apiURL string, token string, forceRefresh boo
 	if !forceRefresh {
 		cache, err := LoadCache(cachePath)
 		if err == nil && !cache.IsStale() {
+			sortReleasesDescending(cache.Releases)
 			return cache.Releases, nil
 		}
 	}
@@ -134,6 +144,7 @@ func EnsureCache(cachePath string, apiURL string, token string, forceRefresh boo
 		cache, cacheErr := LoadCache(cachePath)
 		if cacheErr == nil && len(cache.Releases) > 0 {
 			fmt.Fprintln(os.Stderr, "Warning: using stale cache (fetch failed)")
+			sortReleasesDescending(cache.Releases)
 			return cache.Releases, nil
 		}
 		return nil, err

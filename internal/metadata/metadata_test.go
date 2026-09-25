@@ -248,6 +248,49 @@ func TestCacheSaveAndLoad(t *testing.T) {
 	}
 }
 
+// TestEnsureCache_SortsPreExistingUnsortedCache proves that EnsureCache
+// sorts its result even when returning data straight from a fresh
+// on-disk cache written before this ordering existed (or by any other
+// path that doesn't itself sort) — the cache-hit branch at line ~134
+// must not bypass sortReleasesDescending. A prior version of this fix
+// only sorted inside FetchReleases, so a pre-existing cache file (the
+// common case for any user who already ran `gdt ls-remote` before this
+// change) stayed silently unsorted until the cache next expired.
+func TestEnsureCache_SortsPreExistingUnsortedCache(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "releases.json")
+
+	// Deliberately unsorted, fresh (not stale) cache — simulates a cache
+	// file written before descending order was introduced.
+	cache := &Cache{
+		UpdatedAt: time.Now(),
+		Releases: []Release{
+			{Version: "3.6.3", Stable: true},
+			{Version: "4.7.2", Stable: true},
+			{Version: "4.6.1", Stable: true},
+			{Version: "4.2", Stable: true},
+		},
+	}
+	if err := SaveCache(path, cache); err != nil {
+		t.Fatal(err)
+	}
+
+	releases, err := EnsureCache(path, "http://unused.invalid", "", false)
+	if err != nil {
+		t.Fatalf("EnsureCache returned error for a fresh cache hit: %v", err)
+	}
+
+	want := []string{"4.7.2", "4.6.1", "4.2", "3.6.3"}
+	if len(releases) != len(want) {
+		t.Fatalf("expected %d releases, got %d: %v", len(want), len(releases), releases)
+	}
+	for i, r := range releases {
+		if r.Version != want[i] {
+			t.Errorf("index %d: expected %q, got %q (full order: %v)", i, want[i], r.Version, releases)
+		}
+	}
+}
+
 func TestCacheIsStale(t *testing.T) {
 	fresh := &Cache{UpdatedAt: time.Now()}
 	if fresh.IsStale() {
