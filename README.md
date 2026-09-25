@@ -476,6 +476,14 @@ In Zed settings (`~/.config/zed/settings.json`):
 
 ### AI Coding Tools
 
+For an AI agent driving `gdt` itself (installing engines, scaffolding
+projects, running exports, etc. on your behalf — as opposed to using
+`gdt` for GDScript code intelligence, covered below), see
+[`skills/gdt/SKILL.md`](skills/gdt/SKILL.md): non-interactive
+invocation gotchas, version resolution order, and common task recipes.
+Copy it into your own Godot project's agent-skill directory (e.g.
+`.claude/skills/gdt/`) if your AI tool supports repo-local skills.
+
 `gdt lsp` works as a standard stdio LSP server, making it compatible with AI coding assistants.
 
 #### Claude Code

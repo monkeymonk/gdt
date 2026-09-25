@@ -41,6 +41,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sandboxed-environment edge case) — it now keeps the already-resolved
   fallback directory instead.
 
+### Added
+
+- `skills/gdt/SKILL.md` — an agent-facing skill for AI coding tools
+  driving `gdt` itself, covering non-interactive invocation, version
+  resolution order, and common task recipes.
+
 ### Changed
 
 - `gdt list` and `gdt ls-remote` now order versions newest to oldest
