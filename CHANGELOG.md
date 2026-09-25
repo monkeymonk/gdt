@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   existing Godot project directory — project detection is only needed
   for the optional `after_ci_setup` plugin hook's context, which is now
   skipped rather than treated as a fatal error when no project is found.
+- `gdt shell init` no longer silently falls back to an empty PATH entry
+  when it can't determine the running binary's own path (a rare,
+  sandboxed-environment edge case) — it now keeps the already-resolved
+  fallback directory instead.
 
 ### Changed
 

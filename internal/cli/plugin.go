@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/monkeymonk/gdt/internal/plugins"
@@ -166,7 +167,7 @@ func newPluginNewCmd(app *App) *cobra.Command {
 				return err
 			}
 			fmt.Fprintf(os.Stderr, "Plugin scaffolded at %s\n", dir)
-			fmt.Fprintf(os.Stderr, "\n  Edit %s to configure your plugin\n", dir+"/"+plugins.ManifestFile)
+			fmt.Fprintf(os.Stderr, "\n  Edit %s to configure your plugin\n", filepath.Join(dir, plugins.ManifestFile))
 			return nil
 		},
 	}

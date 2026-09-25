@@ -23,8 +23,14 @@ func newShellCmd(app *App) *cobra.Command {
 			shell := detectShell()
 			binDir := filepath.Dir(os.Args[0])
 			if binDir == "." {
-				exe, _ := os.Executable()
-				binDir = filepath.Dir(exe)
+				exe, err := os.Executable()
+				if err != nil {
+					if os.Getenv("GDT_DEBUG") == "1" {
+						fmt.Fprintf(os.Stderr, "debug: shell init: determining executable path: %v\n", err)
+					}
+				} else {
+					binDir = filepath.Dir(exe)
+				}
 			}
 			switch shell {
 			case "fish":
