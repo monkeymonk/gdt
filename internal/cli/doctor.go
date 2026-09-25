@@ -6,12 +6,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/monkeymonk/gdt/internal/project"
 	"github.com/spf13/cobra"
 )
 
+// newDoctorCmd builds the "gdt doctor" command, which diagnoses installation problems.
 func newDoctorCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "doctor",
@@ -23,7 +23,7 @@ func newDoctorCmd(app *App) *cobra.Command {
 }
 
 func runDoctor(app *App) error {
-	svc := engine.NewService(app.Home, app.Platform, app.Config)
+	svc := app.EngineSvc()
 	issues := 0
 
 	binDir := filepath.Dir(os.Args[0])

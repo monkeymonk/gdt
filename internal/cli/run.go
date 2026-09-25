@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newRunCmd builds the "gdt run [version] [-- <args>]" command, which runs a Godot engine version.
 func newRunCmd(app *App) *cobra.Command {
 	var editor bool
 
@@ -26,6 +27,7 @@ func newRunCmd(app *App) *cobra.Command {
 	return cmd
 }
 
+// newEditCmd builds the "gdt edit [version] [-- <args>]" command, which opens the Godot editor.
 func newEditCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "edit [version] [-- <args>]",
@@ -37,7 +39,7 @@ func newEditCmd(app *App) *cobra.Command {
 }
 
 func runGodot(app *App, args []string, editor bool) error {
-	svc := engine.NewService(app.Home, app.Platform, app.Config)
+	svc := app.EngineSvc()
 
 	var version string
 	var engineArgs []string
@@ -89,7 +91,10 @@ func runGodot(app *App, args []string, editor bool) error {
 		EnginePath:   binPath,
 	}
 	if err := pluginSvc.RunHooks(plugins.BeforeRun, hookCtx); err != nil {
-		return err
+		return engine.Actionable(
+			fmt.Errorf("a before_run hook failed: %w", err),
+			"check the plugin's hook script for errors, or remove/disable the plugin and retry",
+		)
 	}
 
 	return engine.ExecBinary(binPath, engineArgs)

@@ -43,6 +43,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   install`) are now observable under `GDT_DEBUG=1` instead of being
   fully silent; behavior is unchanged (a cache-write failure still never
   fails the command, since the fetched data is already in hand).
+- A failing `before_run`/`before_new`/`after_new`/`before_export` plugin
+  hook now returns the same actionable error shape (with a "check the
+  plugin's hook script" suggestion) as the other plugin hooks already
+  did — previously these four returned a bare error with no recovery
+  guidance.
+- `gdt export`'s "preset name required" message now shows the command's
+  usage form (`gdt export <preset>`) alongside the existing `--list`
+  hint, matching every other command's required-argument message
+  format.
 
 ## [0.2.2] - 2026-07-21
 

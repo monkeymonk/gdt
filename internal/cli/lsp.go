@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newLspCmd builds the "gdt lsp" command, which starts an LSP proxy to Godot.
 func newLspCmd(app *App) *cobra.Command {
 	var port int
 	var projectPath string

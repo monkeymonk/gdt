@@ -13,7 +13,7 @@ import (
 // promptVersion prompts the user to select from installed versions.
 // Returns empty string if no versions are installed.
 func promptVersion(app *App, title string) (string, error) {
-	svc := engine.NewService(app.Home, app.Platform, app.Config)
+	svc := app.EngineSvc()
 	installed, err := svc.ListVersionStrings()
 	if err != nil {
 		return "", engine.Actionable(
@@ -87,7 +87,7 @@ func promptPreset(presets []string) (string, error) {
 
 // promptInstalledTemplate prompts the user to select from installed templates.
 func promptInstalledTemplate(app *App, title string) (string, error) {
-	svc := engine.NewService(app.Home, app.Platform, app.Config)
+	svc := app.EngineSvc()
 	list, err := svc.ListTemplates()
 	if err != nil {
 		return "", engine.Actionable(

@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newCompletionCmd builds the "gdt completion [bash|zsh|fish|powershell]" command, which generates shell completion scripts.
 func newCompletionCmd(app *App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "completion [bash|zsh|fish|powershell]",

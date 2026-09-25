@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newTemplatesCmd builds the "gdt templates" command, which manages export templates.
 func newTemplatesCmd(app *App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "templates",
@@ -19,12 +20,13 @@ func newTemplatesCmd(app *App) *cobra.Command {
 	return cmd
 }
 
+// newTemplatesListCmd builds the "gdt templates list" command, which lists installed templates.
 func newTemplatesListCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
 		Short: "List installed templates",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			svc := app.EngineSvc()
 			list, err := svc.ListTemplates()
 			if err != nil {
 				return err
@@ -43,6 +45,7 @@ func newTemplatesListCmd(app *App) *cobra.Command {
 	}
 }
 
+// newTemplatesRemoveCmd builds the "gdt templates remove [version]" command, which removes installed export templates.
 func newTemplatesRemoveCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:     "remove [version]",
@@ -75,7 +78,7 @@ func newTemplatesRemoveCmd(app *App) *cobra.Command {
 				}
 			}
 
-			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			svc := app.EngineSvc()
 			if err := svc.RemoveTemplates(version); err != nil {
 				return err
 			}
@@ -85,6 +88,7 @@ func newTemplatesRemoveCmd(app *App) *cobra.Command {
 	}
 }
 
+// newTemplatesInstallCmd builds the "gdt templates install [version]" command, which installs export templates.
 func newTemplatesInstallCmd(app *App) *cobra.Command {
 	var mono bool
 	var refresh bool
@@ -109,7 +113,7 @@ func newTemplatesInstallCmd(app *App) *cobra.Command {
 				return fmt.Errorf("version required\n\n  gdt templates install <version>")
 			}
 
-			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			svc := app.EngineSvc()
 			fmt.Fprintf(os.Stderr, "Installing templates for %s...\n", query)
 			result, err := svc.InstallTemplates(cmd.Context(), query, engine.InstallOpts{
 				Mono:    mono,

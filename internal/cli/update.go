@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newUpdateCmd builds the "gdt update" command, which refreshes the release metadata cache.
 func newUpdateCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "update",

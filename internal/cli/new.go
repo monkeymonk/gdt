@@ -13,19 +13,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// resolveTemplate determines the template source and creates the project.
-// It handles plugin template lookup, built-in templates, git clone, and minimal scaffold.
-func resolveTemplate(templateURL string, pluginSvc *plugins.Service, projectDir string, name string, version string, renderer string, csharp bool) error {
+// resolveTemplateOptions bundles the parameters resolveTemplate needs to
+// locate and materialize a project's template.
+type resolveTemplateOptions struct {
+	TemplateURL string
+	PluginSvc   *plugins.Service
+	ProjectDir  string
+	Name        string
+	Version     string
+	Renderer    string
+	CSharp      bool
+}
+
+// resolveTemplate determines the template source and creates the project based on the provided options.
+func resolveTemplate(opts resolveTemplateOptions) error {
 	// Check if template is from a plugin (core built-ins take priority)
 	isBuiltin := false
 	for _, bt := range project.AvailableTemplates() {
-		if templateURL == bt {
+		if opts.TemplateURL == bt {
 			isBuiltin = true
 			break
 		}
 	}
-	if templateURL != "" && !isBuiltin && !strings.Contains(templateURL, "/") && !strings.Contains(templateURL, "http") {
-		pluginTemplates, err := pluginSvc.DiscoverTemplates()
+	if opts.TemplateURL != "" && !isBuiltin && !strings.Contains(opts.TemplateURL, "/") && !strings.Contains(opts.TemplateURL, "http") {
+		pluginTemplates, err := opts.PluginSvc.DiscoverTemplates()
 		if err != nil {
 			return engine.Actionable(
 				fmt.Errorf("discovering plugin templates: %w", err),
@@ -40,33 +51,35 @@ func resolveTemplate(templateURL string, pluginSvc *plugins.Service, projectDir 
 				Data:          t,
 			})
 		}
-		if resolved, resolveErr := plugins.ResolveNamespace(templateURL, items); resolveErr == nil {
+		if resolved, resolveErr := plugins.ResolveNamespace(opts.TemplateURL, items); resolveErr == nil {
 			pt := resolved.Data.(plugins.PluginTemplate)
 			fmt.Fprintf(os.Stderr, "Creating project from plugin template %s:%s...\n", pt.PluginName, pt.Name)
-			return project.CopyTemplate(pt.Dir, projectDir, name, version)
+			return project.CopyTemplate(pt.Dir, opts.ProjectDir, opts.Name, opts.Version)
 		}
 	}
 
-	if templateURL == "2d" || templateURL == "3d" {
-		fmt.Fprintf(os.Stderr, "Creating %s project from built-in template...\n", templateURL)
-		return project.GenerateFromTemplate(templateURL, projectDir, name, version)
-	} else if templateURL != "" {
+	if opts.TemplateURL == "2d" || opts.TemplateURL == "3d" {
+		fmt.Fprintf(os.Stderr, "Creating %s project from built-in template...\n", opts.TemplateURL)
+		return project.GenerateFromTemplate(opts.TemplateURL, opts.ProjectDir, opts.Name, opts.Version)
+	} else if opts.TemplateURL != "" {
 		fmt.Fprintf(os.Stderr, "Creating project from template...\n")
-		return project.CloneTemplate(templateURL, projectDir, version)
+		return project.CloneTemplate(opts.TemplateURL, opts.ProjectDir, opts.Version)
 	}
 
+	renderer := opts.Renderer
 	if renderer == "" {
 		renderer = "forward_plus"
 	}
 	return project.Generate(project.ScaffoldOptions{
-		Name:     name,
-		Version:  version,
+		Name:     opts.Name,
+		Version:  opts.Version,
 		Renderer: renderer,
-		Dir:      projectDir,
-		CSharp:   csharp,
+		Dir:      opts.ProjectDir,
+		CSharp:   opts.CSharp,
 	})
 }
 
+// newNewCmd builds the "gdt new [name]" command, which creates a new Godot project.
 func newNewCmd(app *App) *cobra.Command {
 	var templateURL string
 	var version string
@@ -123,7 +136,7 @@ func runNew(app *App, listTemplates bool, name string, templateURL string, versi
 		return runListTemplates(app)
 	}
 
-	svc := engine.NewService(app.Home, app.Platform, app.Config)
+	svc := app.EngineSvc()
 	installed, err := svc.ListVersionStrings()
 	if err != nil {
 		return engine.Actionable(
@@ -214,15 +227,29 @@ func runNew(app *App, listTemplates bool, name string, templateURL string, versi
 		GodotVersion: version,
 	}
 	if err := pluginSvc.RunHooks(plugins.BeforeNew, hookCtx); err != nil {
-		return err
+		return engine.Actionable(
+			fmt.Errorf("a before_new hook failed; the project was not created: %w", err),
+			"check the plugin's hook script for errors, or remove/disable the plugin and retry",
+		)
 	}
 
-	if err := resolveTemplate(templateURL, pluginSvc, projectDir, name, version, renderer, csharp); err != nil {
+	if err := resolveTemplate(resolveTemplateOptions{
+		TemplateURL: templateURL,
+		PluginSvc:   pluginSvc,
+		ProjectDir:  projectDir,
+		Name:        name,
+		Version:     version,
+		Renderer:    renderer,
+		CSharp:      csharp,
+	}); err != nil {
 		return err
 	}
 
 	if err := pluginSvc.RunHooks(plugins.AfterNew, hookCtx); err != nil {
-		return err
+		return engine.Actionable(
+			fmt.Errorf("project created successfully, but an after_new hook failed: %w", err),
+			"check the plugin's hook script for errors, or remove/disable the plugin and retry",
+		)
 	}
 
 	fmt.Fprintf(os.Stderr, "Project %s created\n", name)

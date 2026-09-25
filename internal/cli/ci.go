@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newCiCmd builds the "gdt ci" command, which provides CI integration tools.
 func newCiCmd(app *App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ci",
@@ -24,6 +25,7 @@ func newCiCmd(app *App) *cobra.Command {
 	return cmd
 }
 
+// newCiSetupCmd builds the "gdt ci setup" command, which generates CI pipeline configuration.
 func newCiSetupCmd(app *App) *cobra.Command {
 	var provider string
 

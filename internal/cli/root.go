@@ -6,11 +6,11 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/spf13/cobra"
 )
 
+// NewRootCmd builds the "gdt" command, which is the Godot Developer Toolchain.
 func NewRootCmd(app *App) *cobra.Command {
 	root := &cobra.Command{
 		Use:           "gdt",
@@ -83,7 +83,7 @@ func dispatchPlugin(app *App, p plugins.Plugin, args []string) error {
 	if err != nil {
 		return fmt.Errorf("dispatching plugin %q: determining working directory: %w", p.Manifest.Name, err)
 	}
-	svc := engine.NewService(app.Home, app.Platform, app.Config)
+	svc := app.EngineSvc()
 	projectRoot, rv, err := svc.ResolveProject(cwd)
 	if err != nil {
 		return fmt.Errorf("dispatching plugin %q: %w", p.Manifest.Name, err)
@@ -107,7 +107,7 @@ func resolveProjectVersion(app *App) (root string, version string, binPath strin
 	if err != nil {
 		return "", "", "", fmt.Errorf("determining working directory: %w", err)
 	}
-	svc := engine.NewService(app.Home, app.Platform, app.Config)
+	svc := app.EngineSvc()
 	projectRoot, rv, resolveErr := svc.ResolveProject(cwd)
 	if resolveErr != nil {
 		return "", "", "", resolveErr

@@ -1,12 +1,15 @@
 package cli
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/monkeymonk/gdt/internal/config"
+	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/platform"
 )
 
@@ -51,5 +54,40 @@ func TestRunGodot_ProjectRootDetectionFailure(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "detecting project root") {
 		t.Errorf("expected error to mention project root detection, got: %v", err)
+	}
+}
+
+// TestRunGodot_BeforeRunHookFailure_ReturnsError proves that a failing
+// before_run hook returns a *engine.ActionableError instead of the bare
+// RunHooks error, and that the game is never launched (ExecBinary is
+// never reached) when the hook fails.
+func TestRunGodot_BeforeRunHookFailure_ReturnsError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows: fake plugin binary is a #!/bin/sh script")
+	}
+	app := testApp(t)
+	setupFakeInstalledVersion(t, app, "4.2.1")
+	writeFailingV2HookPlugin(t, filepath.Join(app.Home, "plugins"), "failplugin", "before_run")
+
+	projectDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(projectDir, "project.godot"), []byte(""), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(projectDir)
+
+	err := runGodot(app, []string{"4.2.1"}, false)
+	if err == nil {
+		t.Fatal("expected error when before_run hook fails, got nil")
+	}
+
+	var ae *engine.ActionableError
+	if !errors.As(err, &ae) {
+		t.Fatalf("expected *engine.ActionableError, got %T: %v", err, err)
+	}
+	if ae.Suggestion == "" {
+		t.Error("expected non-empty Suggestion on ActionableError")
+	}
+	if !strings.Contains(err.Error(), "before_run") {
+		t.Errorf("expected error to mention before_run hook, got: %v", err)
 	}
 }

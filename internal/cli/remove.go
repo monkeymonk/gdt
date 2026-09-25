@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/spf13/cobra"
 )
 
+// newRemoveCmd builds the "gdt remove [version]" command, which removes an installed version.
 func newRemoveCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:     "remove [version]",
@@ -43,7 +43,7 @@ func newRemoveCmd(app *App) *cobra.Command {
 				}
 			}
 
-			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			svc := app.EngineSvc()
 			if err := svc.Remove(cmd.Context(), version); err != nil {
 				return err
 			}

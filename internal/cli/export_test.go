@@ -103,3 +103,35 @@ func TestRunExport_AfterHookFailure_ReturnsError(t *testing.T) {
 		t.Errorf("expected export output to exist despite hook failure: %v", statErr)
 	}
 }
+
+// TestRunExport_BeforeHookFailure_ReturnsError proves that a failing
+// before_export hook returns a *engine.ActionableError and that the
+// export itself never runs (no dist/ output) when the hook fails first.
+func TestRunExport_BeforeHookFailure_ReturnsError(t *testing.T) {
+	app, projectDir := setupExportFixture(t)
+	writeFailingV2HookPlugin(t, filepath.Join(app.Home, "plugins"), "failplugin", "before_export")
+
+	err := runExport(app, "linux", "", false, false)
+	if err == nil {
+		t.Fatal("expected error when before_export hook fails, got nil")
+	}
+
+	var ae *engine.ActionableError
+	if !errors.As(err, &ae) {
+		t.Fatalf("expected *engine.ActionableError, got %T: %v", err, err)
+	}
+	if ae.Suggestion == "" {
+		t.Error("expected non-empty Suggestion on ActionableError")
+	}
+	if !strings.Contains(err.Error(), "before_export") {
+		t.Errorf("expected error to mention before_export hook, got: %v", err)
+	}
+
+	// The export must NOT have run — the hook failed before the godot
+	// process was ever invoked. The output directory itself always exists
+	// by this point (runExport MkdirAlls it before the hook, independent
+	// of hook success), so check for the actual export artifact instead.
+	if _, statErr := os.Stat(filepath.Join(projectDir, "dist", "linux", "game")); !os.IsNotExist(statErr) {
+		t.Errorf("expected no export output file to exist, stat error: %v", statErr)
+	}
+}

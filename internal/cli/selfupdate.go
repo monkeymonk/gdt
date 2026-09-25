@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newSelfUpdateCmd builds the "gdt self" command, which manages self updates.
 func newSelfUpdateCmd(app *App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "self",

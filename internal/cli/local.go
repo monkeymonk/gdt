@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/spf13/cobra"
 )
 
+// newLocalCmd builds the "gdt local [version]" command, which pins a version for the current project.
 func newLocalCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "local [version]",
 		Short: "Pin version for current project",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			svc := app.EngineSvc()
 
 			version := ""
 			if len(args) > 0 {

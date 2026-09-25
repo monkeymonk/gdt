@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newShellCmd builds the "gdt shell" command, which provides shell integration.
 func newShellCmd(app *App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "shell",

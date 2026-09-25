@@ -4,6 +4,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/monkeymonk/gdt/internal/config"
@@ -26,7 +28,15 @@ func TestResolveTemplate_PluginDiscoveryFailure_ReturnsError(t *testing.T) {
 	}
 	pluginSvc := plugins.NewService(brokenPluginsDir)
 
-	err := resolveTemplate("mytemplate", pluginSvc, t.TempDir(), "proj", "4.3", "forward_plus", false)
+	err := resolveTemplate(resolveTemplateOptions{
+		TemplateURL: "mytemplate",
+		PluginSvc:   pluginSvc,
+		ProjectDir:  t.TempDir(),
+		Name:        "proj",
+		Version:     "4.3",
+		Renderer:    "forward_plus",
+		CSharp:      false,
+	})
 	if err == nil {
 		t.Fatal("expected resolveTemplate to return an error when plugin template discovery fails, got nil")
 	}
@@ -71,5 +81,101 @@ func TestRunNew_VersionListFailure_ReturnsError(t *testing.T) {
 	}
 	if ae.Suggestion == "" {
 		t.Error("expected non-empty Suggestion on ActionableError")
+	}
+}
+
+// TestRunNew_BeforeNewHookFailure_ReturnsError proves that a failing
+// before_new hook returns a *engine.ActionableError and that the project
+// is never scaffolded (resolveTemplate is never reached) when the hook
+// fails before creation.
+func TestRunNew_BeforeNewHookFailure_ReturnsError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows: fake plugin binary is a #!/bin/sh script")
+	}
+	home := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(home, "versions"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFailingV2HookPlugin(t, filepath.Join(home, "plugins"), "failplugin", "before_new")
+
+	app := &App{
+		Home:     home,
+		Config:   &config.Config{},
+		Platform: platform.Info{OS: "linux", Arch: "amd64"},
+	}
+
+	projectDir := t.TempDir()
+	t.Chdir(projectDir)
+	name := filepath.Join(projectDir, "proj")
+
+	err := runNew(app, false, name, "", "4.3", "forward_plus", false, false, true)
+	if err == nil {
+		t.Fatal("expected error when before_new hook fails, got nil")
+	}
+
+	var ae *engine.ActionableError
+	if !errors.As(err, &ae) {
+		t.Fatalf("expected *engine.ActionableError, got %T: %v", err, err)
+	}
+	if ae.Suggestion == "" {
+		t.Error("expected non-empty Suggestion on ActionableError")
+	}
+	if !strings.Contains(err.Error(), "before_new") {
+		t.Errorf("expected error to mention before_new hook, got: %v", err)
+	}
+
+	// project.godot must NOT have been created — the hook failed before
+	// scaffolding ran.
+	if _, statErr := os.Stat(filepath.Join(name, "project.godot")); !os.IsNotExist(statErr) {
+		t.Errorf("expected no project.godot to exist, stat error: %v", statErr)
+	}
+}
+
+// TestRunNew_AfterNewHookFailure_ReturnsError proves that a failing
+// after_new hook returns a *engine.ActionableError with phrasing that
+// reflects the project WAS already created (distinct from the before_new
+// case), and that the project files are on disk despite the hook failure.
+func TestRunNew_AfterNewHookFailure_ReturnsError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping on windows: fake plugin binary is a #!/bin/sh script")
+	}
+	home := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(home, "versions"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeFailingV2HookPlugin(t, filepath.Join(home, "plugins"), "failplugin", "after_new")
+
+	app := &App{
+		Home:     home,
+		Config:   &config.Config{},
+		Platform: platform.Info{OS: "linux", Arch: "amd64"},
+	}
+
+	projectDir := t.TempDir()
+	t.Chdir(projectDir)
+	name := filepath.Join(projectDir, "proj")
+
+	err := runNew(app, false, name, "", "4.3", "forward_plus", false, false, true)
+	if err == nil {
+		t.Fatal("expected error when after_new hook fails, got nil")
+	}
+
+	var ae *engine.ActionableError
+	if !errors.As(err, &ae) {
+		t.Fatalf("expected *engine.ActionableError, got %T: %v", err, err)
+	}
+	if ae.Suggestion == "" {
+		t.Error("expected non-empty Suggestion on ActionableError")
+	}
+	if !strings.Contains(err.Error(), "after_new") {
+		t.Errorf("expected error to mention after_new hook, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "created successfully") {
+		t.Errorf("expected error to make clear the project was created despite hook failure, got: %v", err)
+	}
+
+	// project.godot MUST exist — scaffolding succeeded before the hook ran.
+	if _, statErr := os.Stat(filepath.Join(name, "project.godot")); statErr != nil {
+		t.Errorf("expected project.godot to exist despite hook failure: %v", statErr)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newLsRemoteCmd builds the "gdt ls-remote" command, which lists available remote versions.
 func newLsRemoteCmd(app *App) *cobra.Command {
 	var refresh bool
 

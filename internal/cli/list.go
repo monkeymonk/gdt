@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/spf13/cobra"
 )
 
+// newListCmd builds the "gdt list" command, which lists installed versions.
 func newListCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "List installed versions",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			svc := app.EngineSvc()
 			installed, err := svc.List()
 			if err != nil {
 				return err

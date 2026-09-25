@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newPluginCmd builds the "gdt plugin" command, which manages plugins.
 func newPluginCmd(app *App) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "plugin",
@@ -26,6 +27,7 @@ func newPluginCmd(app *App) *cobra.Command {
 	return cmd
 }
 
+// newPluginInstallCmd builds the "gdt plugin install [repository]" command, which installs a plugin from a Git repository.
 func newPluginInstallCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "install [repository]",
@@ -58,6 +60,7 @@ func newPluginInstallCmd(app *App) *cobra.Command {
 	}
 }
 
+// newPluginListCmd builds the "gdt plugin list" command, which lists installed plugins.
 func newPluginListCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "list",
@@ -97,6 +100,7 @@ func newPluginListCmd(app *App) *cobra.Command {
 	}
 }
 
+// newPluginUpdateCmd builds the "gdt plugin update [name]" command, which updates plugins.
 func newPluginUpdateCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "update [name]",
@@ -133,6 +137,7 @@ func newPluginUpdateCmd(app *App) *cobra.Command {
 	}
 }
 
+// newPluginNewCmd builds the "gdt plugin new [name]" command, which scaffolds a new plugin.
 func newPluginNewCmd(app *App) *cobra.Command {
 	var lang string
 
@@ -170,6 +175,7 @@ func newPluginNewCmd(app *App) *cobra.Command {
 	return cmd
 }
 
+// newPluginRemoveCmd builds the "gdt plugin remove [name]" command, which removes a plugin.
 func newPluginRemoveCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "remove [name]",

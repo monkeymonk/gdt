@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newInstallCmd builds the "gdt install [version]" command, which installs a Godot engine version.
 func newInstallCmd(app *App) *cobra.Command {
 	var mono bool
 	var force bool
@@ -21,7 +22,7 @@ func newInstallCmd(app *App) *cobra.Command {
 		Short: "Install a Godot engine version",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			svc := app.EngineSvc()
 
 			query := ""
 			if len(args) > 0 {

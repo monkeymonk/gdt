@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newDapCmd builds the "gdt dap" command, which starts a DAP proxy to the Godot debugger.
 func newDapCmd(app *App) *cobra.Command {
 	var port int
 	var projectPath string

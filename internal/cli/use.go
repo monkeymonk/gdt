@@ -10,13 +10,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newUseCmd builds the "gdt use [version]" command, which sets the global default version.
 func newUseCmd(app *App) *cobra.Command {
 	return &cobra.Command{
 		Use:   "use [version]",
 		Short: "Set global default version",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			svc := engine.NewService(app.Home, app.Platform, app.Config)
+			svc := app.EngineSvc()
 
 			version := ""
 			if len(args) > 0 {

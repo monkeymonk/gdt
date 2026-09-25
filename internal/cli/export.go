@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// newExportCmd builds the "gdt export [preset]" command, which exports a project for a platform.
 func newExportCmd(app *App) *cobra.Command {
 	var outputDir string
 	var debug bool
@@ -55,7 +56,7 @@ func newExportCmd(app *App) *cobra.Command {
 				preset = p
 			}
 			if preset == "" {
-				return fmt.Errorf("preset name required\n\n  List available: gdt export --list")
+				return fmt.Errorf("preset name required\n\n  gdt export <preset>\n  gdt export --list")
 			}
 			return runExport(app, preset, outputDir, debug, verbose)
 		},
@@ -123,7 +124,7 @@ func runExport(app *App, preset string, outputDir string, debug bool, verbose bo
 		return fmt.Errorf("preset %q not found\n\n  Available: %s", preset, strings.Join(presets, ", "))
 	}
 
-	svc := engine.NewService(app.Home, app.Platform, app.Config)
+	svc := app.EngineSvc()
 	if !svc.TemplatesInstalled(version) {
 		fmt.Fprintf(os.Stderr, "Export templates not installed for %s\n", version)
 		fmt.Fprintf(os.Stderr, "\n  gdt templates install %s\n", version)
@@ -154,7 +155,10 @@ func runExport(app *App, preset string, outputDir string, debug bool, verbose bo
 		EnginePath:   binPath,
 	}
 	if err := pluginSvc.RunHooks(plugins.BeforeExport, hookCtx); err != nil {
-		return err
+		return engine.Actionable(
+			fmt.Errorf("a before_export hook failed: %w", err),
+			"check the plugin's hook script for errors, or remove/disable the plugin and retry",
+		)
 	}
 
 	fmt.Fprintf(os.Stderr, "Exporting %q...\n", preset)
