@@ -54,6 +54,90 @@ func TestFetchReleases(t *testing.T) {
 	}
 }
 
+func fakeGitHubServerScrambled(t *testing.T) *httptest.Server {
+	t.Helper()
+	// Deliberately not in newest-first order, and not alphabetical
+	// order either ("4.1.0" < "4.10.0" < "4.2.2" lexicographically),
+	// so this proves FetchReleases applies an explicit numeric sort
+	// rather than relying on request or string order.
+	releases := []githubRelease{
+		{
+			TagName: "4.1.0-stable",
+			Assets: []githubAsset{
+				{Name: "Godot_v4.1.0-stable_linux.x86_64.zip", URL: "http://example.com/linux410.zip"},
+			},
+		},
+		{
+			TagName: "4.10.0-stable",
+			Assets: []githubAsset{
+				{Name: "Godot_v4.10.0-stable_linux.x86_64.zip", URL: "http://example.com/linux4100.zip"},
+			},
+		},
+		{
+			TagName: "4.2.2-stable",
+			Assets: []githubAsset{
+				{Name: "Godot_v4.2.2-stable_linux.x86_64.zip", URL: "http://example.com/linux422.zip"},
+			},
+		},
+	}
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewEncoder(w).Encode(releases)
+	}))
+}
+
+func TestFetchReleasesSortedDescending(t *testing.T) {
+	srv := fakeGitHubServerScrambled(t)
+	defer srv.Close()
+
+	releases, err := FetchReleases(srv.URL, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []string{"4.10.0", "4.2.2", "4.1.0"}
+	if len(releases) != len(want) {
+		t.Fatalf("expected %d releases, got %d", len(want), len(releases))
+	}
+	for i, w := range want {
+		if releases[i].Version != w {
+			t.Errorf("releases[%d].Version = %q, want %q", i, releases[i].Version, w)
+		}
+	}
+}
+
+func TestCompareVersions(t *testing.T) {
+	tests := []struct {
+		name string
+		a    string
+		b    string
+		want int // sign only: -1 negative, 0 zero, 1 positive
+	}{
+		{"standard ordering", "4.3", "4.2", 1},
+		{"multi-digit segment is numeric not lexicographic", "4.10", "4.9", 1},
+		{"reverse of multi-digit segment", "4.9", "4.10", -1},
+		{"extra patch segment wins", "4.3.1", "4.3", 1},
+		{"missing trailing segment treated as zero", "4.3", "4.3.0", 0},
+		{"mono suffix stripped before comparing", "4.3-mono", "4.3", 0},
+		{"mono suffix stripped on both sides", "4.3-mono", "4.3.0-mono", 0},
+		{"equal versions", "4.3.0", "4.3.0", 0},
+		{"older loses", "4.2", "4.3", -1},
+		{"non-numeric segment parses as zero, does not panic", "4.x", "4.0", 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := CompareVersions(tt.a, tt.b)
+			switch {
+			case tt.want > 0 && got <= 0:
+				t.Errorf("CompareVersions(%q, %q) = %d, want positive", tt.a, tt.b, got)
+			case tt.want < 0 && got >= 0:
+				t.Errorf("CompareVersions(%q, %q) = %d, want negative", tt.a, tt.b, got)
+			case tt.want == 0 && got != 0:
+				t.Errorf("CompareVersions(%q, %q) = %d, want 0", tt.a, tt.b, got)
+			}
+		})
+	}
+}
+
 func TestEnsureCacheReturnsReleasesOnCacheWriteFailure(t *testing.T) {
 	srv := fakeGitHubServer(t)
 	defer srv.Close()

@@ -48,15 +48,15 @@ func TestList_MultipleVersions(t *testing.T) {
 	if len(versions) != 3 {
 		t.Fatalf("expected 3 versions, got %d", len(versions))
 	}
-	// Should be sorted alphabetically
-	if versions[0].Version != "4.1.0" {
-		t.Errorf("expected first version 4.1.0, got %s", versions[0].Version)
+	// Should be sorted newest to oldest
+	if versions[0].Version != "4.3.0" {
+		t.Errorf("expected first version 4.3.0, got %s", versions[0].Version)
 	}
 	if versions[1].Version != "4.2.1" {
 		t.Errorf("expected second version 4.2.1, got %s", versions[1].Version)
 	}
-	if versions[2].Version != "4.3.0" {
-		t.Errorf("expected third version 4.3.0, got %s", versions[2].Version)
+	if versions[2].Version != "4.1.0" {
+		t.Errorf("expected third version 4.1.0, got %s", versions[2].Version)
 	}
 }
 
@@ -92,8 +92,55 @@ func TestListVersionStrings(t *testing.T) {
 	if len(strs) != 2 {
 		t.Fatalf("expected 2 strings, got %d", len(strs))
 	}
-	if strs[0] != "4.2.1" || strs[1] != "4.3.0" {
+	if strs[0] != "4.3.0" || strs[1] != "4.2.1" {
 		t.Errorf("unexpected strings: %v", strs)
+	}
+}
+
+func TestList_NumericOrderingNotAlphabetical(t *testing.T) {
+	svc := testService(t)
+	setupFakeVersion(t, svc, "4.10")
+	setupFakeVersion(t, svc, "4.2")
+	setupFakeVersion(t, svc, "4.3")
+
+	versions, err := svc.List()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(versions) != 3 {
+		t.Fatalf("expected 3 versions, got %d", len(versions))
+	}
+	// Numeric order is 4.10, 4.3, 4.2 — alphabetical order would
+	// wrongly produce 4.10, 4.2, 4.3, which this test must reject.
+	got := []string{versions[0].Version, versions[1].Version, versions[2].Version}
+	want := []string{"4.10", "4.3", "4.2"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("versions = %v, want %v", got, want)
+			break
+		}
+	}
+}
+
+func TestListVersionStrings_NumericOrdering(t *testing.T) {
+	svc := testService(t)
+	setupFakeVersion(t, svc, "4.10")
+	setupFakeVersion(t, svc, "4.2")
+	setupFakeVersion(t, svc, "4.3")
+
+	strs, err := svc.ListVersionStrings()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []string{"4.10", "4.3", "4.2"}
+	if len(strs) != len(want) {
+		t.Fatalf("expected %d strings, got %d", len(want), len(strs))
+	}
+	for i := range want {
+		if strs[i] != want[i] {
+			t.Errorf("strs = %v, want %v", strs, want)
+			break
+		}
 	}
 }
 

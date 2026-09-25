@@ -38,7 +38,7 @@ func (s *Service) Resolve(startDir string) (ResolvedVersion, error) {
 		return ResolvedVersion{}, err
 	}
 	if len(versions) > 0 {
-		v := versions[len(versions)-1]
+		v := versions[0]
 		bin, binErr := s.BinaryPath(v)
 		return ResolvedVersion{Version: v, BinaryPath: bin, Source: "latest"}, binErr
 	}
@@ -64,7 +64,7 @@ func (s *Service) ResolveInstalledVersion(query string) (string, error) {
 	// latest/stable aliases
 	if query == "latest" || query == "stable" {
 		if len(installed) > 0 {
-			return installed[len(installed)-1], nil
+			return installed[0], nil
 		}
 		return "", Actionable(
 			fmt.Errorf("no versions installed"),
@@ -72,8 +72,9 @@ func (s *Service) ResolveInstalledVersion(query string) (string, error) {
 		)
 	}
 
-	// Prefix match (e.g. "4.3" matches "4.3.1")
-	for i := len(installed) - 1; i >= 0; i-- {
+	// Prefix match (e.g. "4.3" matches "4.3.1") — installed is newest
+	// first, so the first match found is the highest matching version.
+	for i := 0; i < len(installed); i++ {
 		if strings.HasPrefix(installed[i], query) {
 			return installed[i], nil
 		}

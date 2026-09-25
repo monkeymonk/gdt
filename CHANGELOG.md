@@ -43,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `gdt list` and `gdt ls-remote` now order versions newest to oldest
+  (numeric comparison, e.g. `4.10` above `4.9`) instead of an
+  alphabetical or API-incidental order.
 - Metadata cache-write failures (`gdt update`, `gdt ls-remote`, `gdt
   install`) are now observable under `GDT_DEBUG=1` instead of being
   fully silent; behavior is unchanged (a cache-write failure still never

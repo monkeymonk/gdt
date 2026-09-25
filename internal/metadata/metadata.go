@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -65,6 +66,11 @@ func FetchReleases(apiURL string, token string) ([]Release, error) {
 			releases = append(releases, *r)
 		}
 	}
+
+	sort.Slice(releases, func(i, j int) bool {
+		return CompareVersions(releases[i].Version, releases[j].Version) > 0
+	})
+
 	return releases, nil
 }
 

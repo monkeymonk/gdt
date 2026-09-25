@@ -4,11 +4,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
+
+	"github.com/monkeymonk/gdt/internal/metadata"
 )
 
-// List returns all installed Godot versions, sorted alphabetically.
-// The default version (from config) is marked with IsDefault=true.
+// List returns all installed Godot versions, sorted newest to oldest
+// (numeric comparison, not alphabetical). The default version (from
+// config) is marked with IsDefault=true.
 func (s *Service) List() ([]InstalledVersion, error) {
 	names, err := listDirectories(s.VersionsDir())
 	if err != nil {
@@ -21,6 +25,9 @@ func (s *Service) List() ([]InstalledVersion, error) {
 			IsDefault: name == s.Config.DefaultVersion,
 		})
 	}
+	sort.Slice(versions, func(i, j int) bool {
+		return metadata.CompareVersions(versions[i].Version, versions[j].Version) > 0
+	})
 	return versions, nil
 }
 
