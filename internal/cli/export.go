@@ -33,7 +33,10 @@ func newExportCmd(app *App) *cobra.Command {
 				preset = args[0]
 			}
 			if preset == "" && isTTY() {
-				cwd, _ := os.Getwd()
+				cwd, err := os.Getwd()
+				if err != nil {
+					return fmt.Errorf("getting working directory: %w", err)
+				}
 				root, err := project.DetectRoot(cwd)
 				if err != nil {
 					return err
@@ -67,7 +70,10 @@ func newExportCmd(app *App) *cobra.Command {
 }
 
 func runExportList(app *App) error {
-	cwd, _ := os.Getwd()
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting working directory: %w", err)
+	}
 	root, err := project.DetectRoot(cwd)
 	if err != nil {
 		return err
@@ -127,7 +133,12 @@ func runExport(app *App, preset string, outputDir string, debug bool, verbose bo
 	if outputDir == "" {
 		outputDir = project.DefaultOutputDir(preset)
 	}
-	os.MkdirAll(outputDir, 0755)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return engine.Actionable(
+			fmt.Errorf("creating output directory %s: %w", outputDir, err),
+			"check that the path is writable and there is no file already at that location, then re-run the export",
+		)
+	}
 
 	outputFile := filepath.Join(outputDir, "game")
 
@@ -172,6 +183,11 @@ func runExport(app *App, preset string, outputDir string, debug bool, verbose bo
 	}
 
 	fmt.Fprintf(os.Stderr, "Export complete: %s\n", outputDir)
-	_ = pluginSvc.RunHooks(plugins.AfterExport, hookCtx)
+	if err := pluginSvc.RunHooks(plugins.AfterExport, hookCtx); err != nil {
+		return engine.Actionable(
+			fmt.Errorf("export to %s succeeded, but an after_export hook failed: %w", outputDir, err),
+			"check the plugin's hook script for errors; the exported game at "+outputDir+" is unaffected",
+		)
+	}
 	return nil
 }

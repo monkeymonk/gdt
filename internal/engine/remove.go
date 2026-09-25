@@ -10,10 +10,10 @@ import (
 // Remove deletes an installed Godot engine version.
 func (s *Service) Remove(_ context.Context, version string) error {
 	if !s.IsInstalled(version) {
-		return &ActionableError{
-			Err:        fmt.Errorf("version %s is not installed", version),
-			Suggestion: "gdt ls",
-		}
+		return Actionable(
+			fmt.Errorf("version %s is not installed", version),
+			"gdt ls",
+		)
 	}
 
 	dir := filepath.Join(s.VersionsDir(), version)

@@ -14,7 +14,7 @@ func newUpdateCmd(app *App) *cobra.Command {
 		Use:   "update",
 		Short: "Refresh release metadata cache",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			apiURL := "https://api.github.com/repos/godotengine/godot/releases"
+			apiURL := app.Config.GodotAPIURL()
 			token := os.Getenv("GITHUB_TOKEN")
 			fmt.Fprintln(os.Stderr, "Refreshing release metadata...")
 

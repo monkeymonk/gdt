@@ -1,9 +1,12 @@
 package metadata
 
 import (
+	"bytes"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -48,6 +51,91 @@ func TestFetchReleases(t *testing.T) {
 	}
 	if releases[0].Version != "4.3" {
 		t.Errorf("version = %q, want %q", releases[0].Version, "4.3")
+	}
+}
+
+func TestEnsureCacheReturnsReleasesOnCacheWriteFailure(t *testing.T) {
+	srv := fakeGitHubServer(t)
+	defer srv.Close()
+
+	dir := t.TempDir()
+	// Make the cache path's parent a file, not a directory, so MkdirAll
+	// (and thus SaveCache) fails while FetchReleases still succeeds.
+	blocker := filepath.Join(dir, "blocker")
+	if err := os.WriteFile(blocker, []byte("not a dir"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cachePath := filepath.Join(blocker, "releases.json")
+
+	releases, err := EnsureCache(cachePath, srv.URL, "", true)
+	if err != nil {
+		t.Fatalf("EnsureCache returned error despite successful fetch: %v", err)
+	}
+	if len(releases) != 2 {
+		t.Errorf("expected 2 releases, got %d", len(releases))
+	}
+}
+
+// TestEnsureCacheLogsCacheWriteFailureWhenDebugEnabled proves the
+// SaveCache failure above is observable via slog.Warn when GDT_DEBUG=1,
+// matching the internal/engine/desktop.go best-effort-logging precedent.
+func TestEnsureCacheLogsCacheWriteFailureWhenDebugEnabled(t *testing.T) {
+	srv := fakeGitHubServer(t)
+	defer srv.Close()
+
+	t.Setenv("GDT_DEBUG", "1")
+
+	dir := t.TempDir()
+	blocker := filepath.Join(dir, "blocker")
+	if err := os.WriteFile(blocker, []byte("not a dir"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cachePath := filepath.Join(blocker, "releases.json")
+
+	var logBuf bytes.Buffer
+	origLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logBuf, nil)))
+	t.Cleanup(func() { slog.SetDefault(origLogger) })
+
+	if _, err := EnsureCache(cachePath, srv.URL, "", true); err != nil {
+		t.Fatalf("EnsureCache returned error despite successful fetch: %v", err)
+	}
+
+	output := logBuf.String()
+	if output == "" {
+		t.Fatal("expected EnsureCache to log a warning for the cache-write failure, got no log output")
+	}
+	if !bytes.Contains(logBuf.Bytes(), []byte("save cache failed")) {
+		t.Errorf("expected log output to mention the cache-write failure, got: %s", output)
+	}
+}
+
+// TestEnsureCacheNoLogWhenDebugDisabled proves the logging added above
+// stays silent by default (GDT_DEBUG unset).
+func TestEnsureCacheNoLogWhenDebugDisabled(t *testing.T) {
+	srv := fakeGitHubServer(t)
+	defer srv.Close()
+
+	t.Setenv("GDT_DEBUG", "")
+
+	dir := t.TempDir()
+	blocker := filepath.Join(dir, "blocker")
+	if err := os.WriteFile(blocker, []byte("not a dir"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cachePath := filepath.Join(blocker, "releases.json")
+
+	var logBuf bytes.Buffer
+	origLogger := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&logBuf, nil)))
+	t.Cleanup(func() { slog.SetDefault(origLogger) })
+
+	if _, err := EnsureCache(cachePath, srv.URL, "", true); err != nil {
+		t.Fatalf("EnsureCache returned error despite successful fetch: %v", err)
+	}
+
+	if logBuf.Len() != 0 {
+		t.Errorf("expected no log output with GDT_DEBUG unset, got: %s", logBuf.String())
 	}
 }
 

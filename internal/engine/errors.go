@@ -16,4 +16,8 @@ type ActionableError struct {
 }
 
 func (e *ActionableError) Error() string { return e.Err.Error() }
+
+func Actionable(err error, suggestion string) *ActionableError {
+	return &ActionableError{Err: err, Suggestion: suggestion}
+}
 func (e *ActionableError) Unwrap() error { return e.Err }

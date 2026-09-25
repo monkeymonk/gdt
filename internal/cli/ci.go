@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/monkeymonk/gdt/internal/ci"
+	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/plugins"
 	"github.com/monkeymonk/gdt/internal/project"
 	"github.com/spf13/cobra"
@@ -95,9 +96,29 @@ func runCiSetup(app *App, provider string) error {
 			return err
 		}
 		fmt.Fprintf(os.Stderr, "CI configuration written to %s\n", outPath)
-		cwd, _ := os.Getwd()
-		root, _ := project.DetectRoot(cwd)
-		_ = pluginSvc.RunHooks(plugins.AfterCISetup, plugins.HookContext{ProjectRoot: root})
+		cwd, err := os.Getwd()
+		if err != nil {
+			if os.Getenv("GDT_DEBUG") == "1" {
+				fmt.Fprintf(os.Stderr, "debug: skipping after_ci_setup hooks: determining working directory: %v\n", err)
+			}
+			return nil
+		}
+		root, err := project.DetectRoot(cwd)
+		if err != nil {
+			// No Godot project here yet — that's fine, CI setup doesn't
+			// require one; skip the optional hook rather than failing a
+			// command whose actual job already succeeded.
+			if os.Getenv("GDT_DEBUG") == "1" {
+				fmt.Fprintf(os.Stderr, "debug: skipping after_ci_setup hooks: %v\n", err)
+			}
+			return nil
+		}
+		if err := pluginSvc.RunHooks(plugins.AfterCISetup, plugins.HookContext{ProjectRoot: root}); err != nil {
+			return engine.Actionable(
+				fmt.Errorf("CI configuration was written to %s, but an after_ci_setup hook failed: %w", outPath, err),
+				"check the plugin's hook script for errors, or remove/disable the plugin and re-run gdt ci setup",
+			)
+		}
 		return nil
 	}
 
@@ -135,8 +156,30 @@ func runCiSetup(app *App, provider string) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "CI configuration written to %s\n", outPath)
-	cwd, _ := os.Getwd()
-	root, _ := project.DetectRoot(cwd)
-	_ = pluginSvc.RunHooks(plugins.AfterCISetup, plugins.HookContext{ProjectRoot: root})
+	cwd, err := os.Getwd()
+	if err != nil {
+		if os.Getenv("GDT_DEBUG") == "1" {
+			fmt.Fprintf(os.Stderr, "debug: skipping after_ci_setup hooks: determining working directory: %v\n", err)
+		}
+		return nil
+	}
+	root, err := project.DetectRoot(cwd)
+	if err != nil {
+		// No Godot project here yet — that's fine, CI setup doesn't require
+		// one. after_ci_setup hooks are an optional plugin enhancement that
+		// needs project context to run meaningfully; skip them rather than
+		// failing a command whose actual job (writing the CI file) already
+		// succeeded.
+		if os.Getenv("GDT_DEBUG") == "1" {
+			fmt.Fprintf(os.Stderr, "debug: skipping after_ci_setup hooks: %v\n", err)
+		}
+		return nil
+	}
+	if err := pluginSvc.RunHooks(plugins.AfterCISetup, plugins.HookContext{ProjectRoot: root}); err != nil {
+		return engine.Actionable(
+			fmt.Errorf("CI configuration was written to %s, but an after_ci_setup hook failed: %w", outPath, err),
+			"check the plugin's hook script for errors, or remove/disable the plugin and re-run gdt ci setup",
+		)
+	}
 	return nil
 }

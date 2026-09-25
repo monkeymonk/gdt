@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/monkeymonk/gdt/internal/engine"
@@ -49,7 +50,10 @@ func runGodot(app *App, args []string, editor bool) error {
 	}
 
 	if version == "" {
-		cwd, _ := os.Getwd()
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("determining working directory: %w", err)
+		}
 		resolved, err := svc.Resolve(cwd)
 		if err != nil {
 			return err
@@ -68,8 +72,17 @@ func runGodot(app *App, args []string, editor bool) error {
 	}
 
 	pluginSvc := plugins.NewService(app.PluginsDir())
-	cwd, _ := os.Getwd()
-	projectRoot, _ := project.DetectRoot(cwd)
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("determining working directory: %w", err)
+	}
+	projectRoot, err := project.DetectRoot(cwd)
+	if err != nil {
+		return engine.Actionable(
+			fmt.Errorf("detecting project root: %w", err),
+			"run gdt run from within a Godot project directory (containing project.godot)",
+		)
+	}
 	hookCtx := plugins.HookContext{
 		ProjectRoot:  projectRoot,
 		GodotVersion: version,

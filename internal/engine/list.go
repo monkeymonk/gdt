@@ -62,10 +62,10 @@ func (s *Service) BinaryPath(version string) (string, error) {
 	// Scan for actual Godot binary (e.g. Godot_v4.3-stable_linux.x86_64)
 	entries, err := os.ReadDir(versionDir)
 	if err != nil {
-		return "", &ActionableError{
-			Err:        fmt.Errorf("version %s is not installed", version),
-			Suggestion: fmt.Sprintf("gdt install %s", version),
-		}
+		return "", Actionable(
+			fmt.Errorf("version %s is not installed", version),
+			fmt.Sprintf("gdt install %s", version),
+		)
 	}
 
 	for _, e := range entries {
@@ -81,8 +81,8 @@ func (s *Service) BinaryPath(version string) (string, error) {
 		}
 	}
 
-	return "", &ActionableError{
-		Err:        fmt.Errorf("engine binary not found in %s", versionDir),
-		Suggestion: fmt.Sprintf("gdt install %s --force", version),
-	}
+	return "", Actionable(
+		fmt.Errorf("engine binary not found in %s", versionDir),
+		fmt.Sprintf("gdt install %s --force", version),
+	)
 }

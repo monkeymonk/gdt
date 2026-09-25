@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/charmbracelet/huh"
@@ -13,7 +14,13 @@ import (
 // Returns empty string if no versions are installed.
 func promptVersion(app *App, title string) (string, error) {
 	svc := engine.NewService(app.Home, app.Platform, app.Config)
-	installed, _ := svc.ListVersionStrings()
+	installed, err := svc.ListVersionStrings()
+	if err != nil {
+		return "", engine.Actionable(
+			fmt.Errorf("listing installed versions: %w", err),
+			"gdt doctor",
+		)
+	}
 	if len(installed) == 0 {
 		return "", nil
 	}
@@ -24,7 +31,7 @@ func promptVersion(app *App, title string) (string, error) {
 		options[i] = huh.NewOption(v, v)
 	}
 
-	err := huh.NewSelect[string]().
+	err = huh.NewSelect[string]().
 		Title(title).
 		Options(options...).
 		Value(&version).
@@ -81,7 +88,13 @@ func promptPreset(presets []string) (string, error) {
 // promptInstalledTemplate prompts the user to select from installed templates.
 func promptInstalledTemplate(app *App, title string) (string, error) {
 	svc := engine.NewService(app.Home, app.Platform, app.Config)
-	list, _ := svc.ListTemplates()
+	list, err := svc.ListTemplates()
+	if err != nil {
+		return "", engine.Actionable(
+			fmt.Errorf("listing installed templates: %w", err),
+			"gdt doctor",
+		)
+	}
 	if len(list) == 0 {
 		return "", nil
 	}
@@ -92,7 +105,7 @@ func promptInstalledTemplate(app *App, title string) (string, error) {
 		options[i] = huh.NewOption(v, v)
 	}
 
-	err := huh.NewSelect[string]().
+	err = huh.NewSelect[string]().
 		Title(title).
 		Options(options...).
 		Value(&version).
@@ -114,7 +127,13 @@ func promptInput(title string, placeholder string) (string, error) {
 // promptInstalledPlugin prompts the user to select from installed plugins.
 func promptInstalledPlugin(app *App, title string) (string, error) {
 	svc := plugins.NewService(app.PluginsDir())
-	pluginList, _ := svc.Discover()
+	pluginList, err := svc.Discover()
+	if err != nil {
+		return "", engine.Actionable(
+			fmt.Errorf("discovering plugins: %w", err),
+			"gdt doctor",
+		)
+	}
 	if len(pluginList) == 0 {
 		return "", nil
 	}
@@ -125,7 +144,7 @@ func promptInstalledPlugin(app *App, title string) (string, error) {
 		options[i] = huh.NewOption(p.Manifest.Name, p.Manifest.Name)
 	}
 
-	err := huh.NewSelect[string]().
+	err = huh.NewSelect[string]().
 		Title(title).
 		Options(options...).
 		Value(&name).

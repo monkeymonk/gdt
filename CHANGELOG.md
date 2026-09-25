@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- CLI commands no longer silently ignore errors from working-directory
+  detection, project-root detection, plugin discovery, engine-version/
+  template listing, and plugin hook execution — failures are now reported
+  (or, for best-effort operations like the desktop launcher and doctor
+  diagnostics, logged/surfaced) instead of proceeding with empty or
+  zero-value state. In particular, a fatal `after_install`/`after_export`/
+  `after_use`/`after_ci_setup` plugin hook failure now correctly aborts
+  the command with a non-zero exit, matching the documented plugin hook
+  contract, instead of being silently discarded.
+- `mirrors` configured in `~/.gdt/config.toml` now actually take effect:
+  `gdt install`/`gdt templates install` fall back to a configured mirror
+  when the primary GitHub download URL is unavailable, per the
+  documented behavior — previously this config key was silently ignored.
+- `gdt install`'s and `gdt update`'s GitHub API URL resolution now
+  honors a configured `godot_api` (forks/mirrors), matching `gdt
+  install`'s own version-download behavior — previously only the actual
+  download used it, while version listing/refresh always hit the
+  default GitHub API regardless of configuration.
+- `gdt self update` no longer silently loses a file-copy error during
+  the binary swap when the copy's data itself transferred but the final
+  flush/close failed (e.g. disk full) — this could previously report
+  success on a truncated binary.
+- `gdt ci setup` no longer fails the whole command (despite having
+  already written the CI configuration file) when run outside an
+  existing Godot project directory — project detection is only needed
+  for the optional `after_ci_setup` plugin hook's context, which is now
+  skipped rather than treated as a fatal error when no project is found.
+
+### Changed
+
+- Metadata cache-write failures (`gdt update`, `gdt ls-remote`, `gdt
+  install`) are now observable under `GDT_DEBUG=1` instead of being
+  fully silent; behavior is unchanged (a cache-write failure still never
+  fails the command, since the fetched data is already in hand).
+
 ## [0.2.2] - 2026-07-21
 
 ### Changed

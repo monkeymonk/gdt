@@ -31,6 +31,10 @@ func File(ctx context.Context, url string, dest string, opts DownloadOpts) error
 		}
 	}
 
+	if len(opts.Mirrors) > 0 {
+		url = ResolveURL(url, opts.Mirrors)
+	}
+
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return err

@@ -1,6 +1,11 @@
 package download
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+)
+
+var mirrorHTTPClient = &http.Client{Timeout: 30 * time.Second}
 
 func ResolveURL(primary string, mirrors []string) string {
 	if checkURL(primary) {
@@ -15,7 +20,7 @@ func ResolveURL(primary string, mirrors []string) string {
 }
 
 func checkURL(url string) bool {
-	resp, err := http.Head(url)
+	resp, err := mirrorHTTPClient.Head(url)
 	if err != nil {
 		return false
 	}

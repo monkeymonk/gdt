@@ -41,8 +41,11 @@ func runDoctor(app *App) error {
 		issues++
 	}
 
-	installed, _ := svc.List()
-	if len(installed) == 0 {
+	installed, err := svc.List()
+	if err != nil {
+		fmt.Printf("  FAIL  could not list installed engine versions: %s\n", err)
+		issues++
+	} else if len(installed) == 0 {
 		fmt.Println("  WARN  no engine versions installed")
 		fmt.Printf("        Run: gdt install <version>\n")
 		issues++
@@ -67,36 +70,52 @@ func runDoctor(app *App) error {
 		}
 	}
 
-	cwd, _ := os.Getwd()
-	if root, err := project.DetectRoot(cwd); err == nil {
-		resolved, _ := svc.Resolve(cwd)
-		hasCSharp, _ := project.HasCSharp(root)
-		if hasCSharp {
-			ver := resolved.Version
-			if ver != "" && !strings.HasSuffix(ver, "-mono") {
-				fmt.Println("  WARN  project uses C# but mono engine not installed")
-				baseVer := strings.TrimSuffix(ver, "-mono")
-				fmt.Printf("        Run: gdt install %s --mono\n", baseVer)
+	cwd, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("  FAIL  could not determine working directory: %s\n", err)
+		issues++
+	} else if root, err := project.DetectRoot(cwd); err == nil {
+		resolved, resolveErr := svc.Resolve(cwd)
+		if resolveErr != nil {
+			fmt.Printf("  FAIL  could not resolve engine version for project: %s\n", resolveErr)
+			issues++
+		} else {
+			hasCSharp, csErr := project.HasCSharp(root)
+			if csErr != nil {
+				fmt.Printf("  FAIL  could not detect C# sources: %s\n", csErr)
 				issues++
-			} else if ver != "" {
-				fmt.Println("  ok  C# project with mono engine")
+			} else if hasCSharp {
+				ver := resolved.Version
+				if ver != "" && !strings.HasSuffix(ver, "-mono") {
+					fmt.Println("  WARN  project uses C# but mono engine not installed")
+					baseVer := strings.TrimSuffix(ver, "-mono")
+					fmt.Printf("        Run: gdt install %s --mono\n", baseVer)
+					issues++
+				} else if ver != "" {
+					fmt.Println("  ok  C# project with mono engine")
+				}
 			}
-		}
 
-		presets, presetsErr := project.ParsePresets(root)
-		if presetsErr == nil && len(presets) > 0 {
-			if !svc.TemplatesInstalled(resolved.Version) {
-				issues++
-				fmt.Printf("  [!] export presets found but no templates installed for %s\n", resolved.Version)
-				fmt.Printf("      fix: gdt templates install %s\n", resolved.Version)
+			presets, presetsErr := project.ParsePresets(root)
+			if presetsErr == nil && len(presets) > 0 {
+				if !svc.TemplatesInstalled(resolved.Version) {
+					issues++
+					fmt.Printf("  [!] export presets found but no templates installed for %s\n", resolved.Version)
+					fmt.Printf("      fix: gdt templates install %s\n", resolved.Version)
+				}
 			}
 		}
 	}
 
 	pluginSvc := plugins.NewService(app.PluginsDir())
-	pluginList, _ := pluginSvc.Discover()
-	for _, p := range pluginList {
-		fmt.Printf("  ok  plugin %s v%s\n", p.Manifest.Name, p.Manifest.Version)
+	pluginList, err := pluginSvc.Discover()
+	if err != nil {
+		fmt.Printf("  FAIL  plugin discovery failed: %s\n", err)
+		issues++
+	} else {
+		for _, p := range pluginList {
+			fmt.Printf("  ok  plugin %s v%s\n", p.Manifest.Name, p.Manifest.Version)
+		}
 	}
 
 	// Run plugin doctor checks (V2 protocol)

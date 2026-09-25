@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -12,6 +13,8 @@ import (
 )
 
 const CacheTTL = 24 * time.Hour
+
+var httpClient = &http.Client{Timeout: 30 * time.Second}
 
 type Release struct {
 	Version string            `json:"version"`
@@ -39,7 +42,7 @@ func FetchReleases(apiURL string, token string) ([]Release, error) {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +137,11 @@ func EnsureCache(cachePath string, apiURL string, token string, forceRefresh boo
 		UpdatedAt: time.Now(),
 		Releases:  releases,
 	}
-	SaveCache(cachePath, cache)
+	if err := SaveCache(cachePath, cache); err != nil {
+		if os.Getenv("GDT_DEBUG") == "1" {
+			slog.Warn("metadata: save cache failed", "error", err)
+		}
+	}
 
 	return releases, nil
 }

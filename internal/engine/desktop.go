@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -56,7 +57,11 @@ func (s *Service) installDesktop() {
 
 	// Update desktop database if available
 	if dbPath, err := exec.LookPath("update-desktop-database"); err == nil {
-		_ = exec.Command(dbPath, dir).Run()
+		if err := exec.Command(dbPath, dir).Run(); err != nil {
+			if os.Getenv("GDT_DEBUG") == "1" {
+				slog.Warn("desktop: update-desktop-database failed", "error", err)
+			}
+		}
 	}
 }
 
@@ -70,17 +75,29 @@ func (s *Service) removeDesktop() {
 
 	// Remove .desktop file
 	path := filepath.Join(applicationsDir(), desktopFileName)
-	_ = os.Remove(path)
+	if err := os.Remove(path); err != nil {
+		if os.Getenv("GDT_DEBUG") == "1" {
+			slog.Warn("desktop: remove .desktop file failed", "error", err)
+		}
+	}
 
 	// Remove icon
 	iconPath := filepath.Join(iconShareDir(), iconFileName)
-	_ = os.Remove(iconPath)
+	if err := os.Remove(iconPath); err != nil {
+		if os.Getenv("GDT_DEBUG") == "1" {
+			slog.Warn("desktop: remove icon failed", "error", err)
+		}
+	}
 
 	// Update desktop database if available
 	dir := applicationsDir()
 	if info, err := os.Stat(dir); err == nil && info.IsDir() {
 		if dbPath, err := exec.LookPath("update-desktop-database"); err == nil {
-			_ = exec.Command(dbPath, dir).Run()
+			if err := exec.Command(dbPath, dir).Run(); err != nil {
+				if os.Getenv("GDT_DEBUG") == "1" {
+					slog.Warn("desktop: update-desktop-database failed", "error", err)
+				}
+			}
 		}
 	}
 }

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -51,14 +52,34 @@ func runLanguageProxy(app *App, port int, portFlag string, projectPath string) e
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		<-sigCh
-		godotCmd.Process.Kill()
+		reportKillError(classifyKillError(godotCmd.Process.Kill()))
 	}()
 
 	defer func() {
-		godotCmd.Process.Kill()
+		reportKillError(classifyKillError(godotCmd.Process.Kill()))
 		godotCmd.Wait()
 	}()
 
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	return proxy.Bridge(addr, os.Stdin, os.Stdout)
+}
+
+// classifyKillError returns nil for a nil error or one indicating the
+// process has already finished (os.ErrProcessDone), and returns the
+// original error unchanged for anything else that deserves reporting.
+func classifyKillError(err error) error {
+	if err == nil || errors.Is(err, os.ErrProcessDone) {
+		return nil
+	}
+	return err
+}
+
+// reportKillError logs a non-nil kill error to stderr. It is safe to call
+// concurrently from both the signal-handling goroutine and the deferred
+// cleanup, since it only reads its argument and writes to os.Stderr.
+func reportKillError(err error) {
+	if err == nil {
+		return
+	}
+	fmt.Fprintf(os.Stderr, "gdt: failed to stop Godot process: %v\n", err)
 }

@@ -66,10 +66,10 @@ func (s *Service) ResolveInstalledVersion(query string) (string, error) {
 		if len(installed) > 0 {
 			return installed[len(installed)-1], nil
 		}
-		return "", &ActionableError{
-			Err:        fmt.Errorf("no versions installed"),
-			Suggestion: "gdt install latest",
-		}
+		return "", Actionable(
+			fmt.Errorf("no versions installed"),
+			"gdt install latest",
+		)
 	}
 
 	// Prefix match (e.g. "4.3" matches "4.3.1")
@@ -79,10 +79,10 @@ func (s *Service) ResolveInstalledVersion(query string) (string, error) {
 		}
 	}
 
-	return "", &ActionableError{
-		Err:        fmt.Errorf("version %q not found", query),
-		Suggestion: fmt.Sprintf("gdt install %s", query),
-	}
+	return "", Actionable(
+		fmt.Errorf("version %q not found", query),
+		fmt.Sprintf("gdt install %s", query),
+	)
 }
 
 // resolveFromFile walks parent directories from startDir looking for .godot-version.

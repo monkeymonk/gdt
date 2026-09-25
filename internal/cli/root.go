@@ -48,7 +48,10 @@ func NewRootCmd(app *App) *cobra.Command {
 
 	// Register plugin commands as cobra subcommands
 	pluginSvc := plugins.NewService(app.PluginsDir())
-	if pluginList, err := pluginSvc.Discover(); err == nil {
+	pluginList, err := pluginSvc.Discover()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "warning: plugin discovery failed: %v\n", err)
+	} else {
 		for _, p := range pluginList {
 			for _, cmdName := range p.Manifest.Commands {
 				plug := p // capture loop variable
@@ -57,8 +60,7 @@ func NewRootCmd(app *App) *cobra.Command {
 					Short:              plug.Manifest.Description,
 					DisableFlagParsing: true,
 					RunE: func(cmd *cobra.Command, args []string) error {
-						dispatchPlugin(app, plug, args)
-						return nil
+						return dispatchPlugin(app, plug, args)
 					},
 				})
 			}
@@ -68,7 +70,7 @@ func NewRootCmd(app *App) *cobra.Command {
 	return root
 }
 
-func dispatchPlugin(app *App, p plugins.Plugin, args []string) {
+func dispatchPlugin(app *App, p plugins.Plugin, args []string) error {
 	binName := p.Manifest.Name
 	binPath := filepath.Join(p.Dir, binName)
 
@@ -77,9 +79,15 @@ func dispatchPlugin(app *App, p plugins.Plugin, args []string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	cwd, _ := os.Getwd()
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("dispatching plugin %q: determining working directory: %w", p.Manifest.Name, err)
+	}
 	svc := engine.NewService(app.Home, app.Platform, app.Config)
-	projectRoot, rv, _ := svc.ResolveProject(cwd)
+	projectRoot, rv, err := svc.ResolveProject(cwd)
+	if err != nil {
+		return fmt.Errorf("dispatching plugin %q: %w", p.Manifest.Name, err)
+	}
 
 	cmd.Env = append(os.Environ(), plugins.BuildEnv(plugins.EnvContext{
 		Home:         app.Home,
@@ -89,12 +97,16 @@ func dispatchPlugin(app *App, p plugins.Plugin, args []string) {
 	})...)
 
 	cmd.Run()
+	return nil
 }
 
 // resolveProjectVersion detects the project root and resolves the engine version.
 // Used by lsp, dap, and export commands.
 func resolveProjectVersion(app *App) (root string, version string, binPath string, err error) {
-	cwd, _ := os.Getwd()
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", "", "", fmt.Errorf("determining working directory: %w", err)
+	}
 	svc := engine.NewService(app.Home, app.Platform, app.Config)
 	projectRoot, rv, resolveErr := svc.ResolveProject(cwd)
 	if resolveErr != nil {

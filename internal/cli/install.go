@@ -29,14 +29,14 @@ func newInstallCmd(app *App) *cobra.Command {
 			}
 			if query == "" {
 				// Try .godot-version file first
-				cwd, _ := os.Getwd()
-				resolved, err := svc.Resolve(cwd)
-				if err == nil && resolved.Version != "" {
-					query = resolved.Version
+				if cwd, err := os.Getwd(); err == nil {
+					if resolved, err := svc.Resolve(cwd); err == nil && resolved.Version != "" {
+						query = resolved.Version
+					}
 				}
 			}
 			if query == "" && isTTY() {
-				releases, err := metadata.EnsureCache(svc.CachePath(), "https://api.github.com/repos/godotengine/godot/releases", os.Getenv("GITHUB_TOKEN"), refresh)
+				releases, err := metadata.EnsureCache(svc.CachePath(), app.Config.GodotAPIURL(), os.Getenv("GITHUB_TOKEN"), refresh)
 				if err != nil {
 					return err
 				}
@@ -73,7 +73,12 @@ func newInstallCmd(app *App) *cobra.Command {
 				GodotVersion: result.VersionName,
 				EnginePath:   enginePath,
 			}
-			_ = pluginSvc.RunHooks(plugins.AfterInstall, hookCtx)
+			if err := pluginSvc.RunHooks(plugins.AfterInstall, hookCtx); err != nil {
+				return engine.Actionable(
+					fmt.Errorf("godot %s installed successfully, but the after_install hook failed: %w", result.VersionName, err),
+					"check the plugin's hook script for errors; the installed engine is unaffected",
+				)
+			}
 			return nil
 		},
 	}

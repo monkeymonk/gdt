@@ -168,20 +168,40 @@ func (s *Service) downloadAndInstall(ctx context.Context, spec downloadSpec) (*I
 	// 8. Verify checksum
 	if expectedChecksum != "" {
 		if err := download.VerifyChecksum(archivePath, expectedChecksum); err != nil {
-			os.Remove(archivePath)
+			if rmErr := os.Remove(archivePath); rmErr != nil {
+				return nil, Actionable(
+					fmt.Errorf("%w, and cleanup of downloaded archive also failed: %v", ErrChecksumMismatch, rmErr),
+					fmt.Sprintf("remove %s manually and retry the install", archivePath),
+				)
+			}
 			return nil, ErrChecksumMismatch
 		}
 	}
 
 	// 9. Extract to tmpDir, then rename to destDir (atomic)
 	tmpDir := filepath.Join(s.CacheDir(), "tmp")
-	os.MkdirAll(tmpDir, 0755)
+	if err := os.MkdirAll(tmpDir, 0755); err != nil {
+		return nil, Actionable(
+			fmt.Errorf("creating temp directory %s: %w", tmpDir, err),
+			"check disk space and permissions under the gdt cache directory, then retry",
+		)
+	}
 	if err := download.ExtractZip(archivePath, tmpDir); err != nil {
 		return nil, fmt.Errorf("extraction failed: %w", err)
 	}
 
-	os.MkdirAll(filepath.Dir(destDir), 0755)
-	os.RemoveAll(destDir)
+	if err := os.MkdirAll(filepath.Dir(destDir), 0755); err != nil {
+		return nil, Actionable(
+			fmt.Errorf("creating versions directory %s: %w", filepath.Dir(destDir), err),
+			"check disk space and permissions under the gdt versions directory, then retry",
+		)
+	}
+	if err := os.RemoveAll(destDir); err != nil {
+		return nil, Actionable(
+			fmt.Errorf("removing existing install at %s: %w", destDir, err),
+			fmt.Sprintf("a partial install may remain at %s; remove it manually and retry", destDir),
+		)
+	}
 	if err := os.Rename(tmpDir, destDir); err != nil {
 		return nil, fmt.Errorf("failed to install: %w", err)
 	}

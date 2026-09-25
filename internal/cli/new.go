@@ -25,7 +25,13 @@ func resolveTemplate(templateURL string, pluginSvc *plugins.Service, projectDir 
 		}
 	}
 	if templateURL != "" && !isBuiltin && !strings.Contains(templateURL, "/") && !strings.Contains(templateURL, "http") {
-		pluginTemplates, _ := pluginSvc.DiscoverTemplates()
+		pluginTemplates, err := pluginSvc.DiscoverTemplates()
+		if err != nil {
+			return engine.Actionable(
+				fmt.Errorf("discovering plugin templates: %w", err),
+				"gdt doctor",
+			)
+		}
 		var items []plugins.NamespacedItem
 		for _, t := range pluginTemplates {
 			items = append(items, plugins.NamespacedItem{
@@ -118,7 +124,13 @@ func runNew(app *App, listTemplates bool, name string, templateURL string, versi
 	}
 
 	svc := engine.NewService(app.Home, app.Platform, app.Config)
-	installed, _ := svc.ListVersionStrings()
+	installed, err := svc.ListVersionStrings()
+	if err != nil {
+		return engine.Actionable(
+			fmt.Errorf("listing installed versions: %w", err),
+			"gdt doctor",
+		)
+	}
 	interactive := false
 
 	if name == "" {

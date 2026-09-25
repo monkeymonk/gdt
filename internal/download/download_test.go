@@ -38,6 +38,78 @@ func TestDownloadFile(t *testing.T) {
 	}
 }
 
+func TestDownloadFile_MirrorFallback(t *testing.T) {
+	content := []byte("mirror binary content")
+
+	// Primary server: closed immediately so requests fail with connection refused.
+	primary := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	primaryURL := primary.URL
+	primary.Close()
+
+	mirror := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(content)))
+		w.Write(content)
+	}))
+	defer mirror.Close()
+
+	dir := t.TempDir()
+	dest := filepath.Join(dir, "test.zip")
+
+	err := File(context.Background(), primaryURL+"/test.zip", dest, DownloadOpts{Mirrors: []string{mirror.URL}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	data, err := os.ReadFile(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != string(content) {
+		t.Error("downloaded content mismatch: expected content from mirror")
+	}
+}
+
+func TestDownloadFile_NoMirrorsSkipsResolve(t *testing.T) {
+	content := []byte("fake binary content")
+	var headCount int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodHead {
+			headCount++
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(content)))
+		w.Write(content)
+	}))
+	defer srv.Close()
+
+	dir := t.TempDir()
+	dest := filepath.Join(dir, "test.zip")
+
+	err := File(context.Background(), srv.URL+"/test.zip", dest, DownloadOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if headCount != 0 {
+		t.Errorf("expected no HEAD requests when opts.Mirrors is empty, got %d", headCount)
+	}
+
+	data, err := os.ReadFile(dest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != string(content) {
+		t.Error("downloaded content mismatch")
+	}
+}
+
 func TestDownloadFileResume(t *testing.T) {
 	content := []byte("0123456789abcdefghij") // 20 bytes
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -50,7 +50,12 @@ func newUseCmd(app *App) *cobra.Command {
 			hookCtx := plugins.HookContext{
 				GodotVersion: version,
 			}
-			_ = pluginSvc.RunHooks(plugins.AfterUse, hookCtx)
+			if err := pluginSvc.RunHooks(plugins.AfterUse, hookCtx); err != nil {
+				return engine.Actionable(
+					fmt.Errorf("default version set to %s, but the after_use hook failed: %w", version, err),
+					"check the plugin's hook script for errors; the default version change is unaffected",
+				)
+			}
 			return nil
 		},
 	}

@@ -26,10 +26,10 @@ func (s *Service) TemplatesInstalled(version string) bool {
 func (s *Service) RemoveTemplates(version string) error {
 	dir := filepath.Join(s.TemplatesDir(), version)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return &ActionableError{
-			Err:        fmt.Errorf("templates for %s are not installed", version),
-			Suggestion: "gdt templates list",
-		}
+		return Actionable(
+			fmt.Errorf("templates for %s are not installed", version),
+			"gdt templates list",
+		)
 	}
 	return os.RemoveAll(dir)
 }
