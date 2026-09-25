@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-25
+
 ### Fixed
 
 - CLI commands no longer silently ignore errors from working-directory
@@ -52,6 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `skills/gdt/SKILL.md` — an agent-facing skill for AI coding tools
   driving `gdt` itself, covering non-interactive invocation, version
   resolution order, and common task recipes.
+- `install_script_url` config key (`~/.gdt/config.toml`) — overrides
+  the install-script URL baked into `gdt ci setup`-generated CI output
+  (GitHub Actions, GitLab CI, generic shell), for forks, internal
+  mirrors, or air-gapped CI environments.
 
 ### Changed
 

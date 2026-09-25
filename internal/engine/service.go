@@ -71,13 +71,22 @@ func (s *Service) CacheDir() string     { return filepath.Join(s.Home, "cache") 
 func (s *Service) CachePath() string    { return filepath.Join(s.Home, "cache", "releases.json") }
 
 // listDirectories returns sorted names of all subdirectories in dir.
-// Returns nil, nil if dir does not exist.
+// Returns nil, nil if dir does not exist. Stats dir first rather than
+// relying solely on os.ReadDir's error classification: on Windows,
+// ReadDir against a path that exists but is a regular file (not a
+// directory) returns ERROR_PATH_NOT_FOUND, which os.IsNotExist also
+// treats as "not exist" — silently misreporting a real problem (e.g.
+// a corrupted VersionsDir) as simply empty. Stat distinguishes missing
+// from wrong-type, on every platform.
 func listDirectories(dir string) ([]string, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
+	if _, err := os.Stat(dir); err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
+		return nil, err
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
 		return nil, err
 	}
 	var names []string
