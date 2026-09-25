@@ -47,7 +47,7 @@ func newUseCmd(app *App) *cobra.Command {
 			}
 			fmt.Fprintf(os.Stderr, "Default version set to %s\n", version)
 
-			pluginSvc := plugins.NewService(app.PluginsDir())
+			pluginSvc := app.PluginSvc()
 			hookCtx := plugins.HookContext{
 				GodotVersion: version,
 			}

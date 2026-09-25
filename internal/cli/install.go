@@ -68,7 +68,7 @@ func newInstallCmd(app *App) *cobra.Command {
 			fmt.Fprintf(os.Stderr, "Godot %s installed\n", result.VersionName)
 			fmt.Fprintf(os.Stderr, "\n  Hint: install export templates with: gdt templates install %s\n", result.Version)
 
-			pluginSvc := plugins.NewService(app.PluginsDir())
+			pluginSvc := app.PluginSvc()
 			enginePath, _ := svc.BinaryPath(result.VersionName)
 			hookCtx := plugins.HookContext{
 				GodotVersion: result.VersionName,

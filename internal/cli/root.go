@@ -47,7 +47,7 @@ func NewRootCmd(app *App) *cobra.Command {
 	)
 
 	// Register plugin commands as cobra subcommands
-	pluginSvc := plugins.NewService(app.PluginsDir())
+	pluginSvc := app.PluginSvc()
 	pluginList, err := pluginSvc.Discover()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "warning: plugin discovery failed: %v\n", err)

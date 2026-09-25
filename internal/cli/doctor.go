@@ -107,7 +107,7 @@ func runDoctor(app *App) error {
 		}
 	}
 
-	pluginSvc := plugins.NewService(app.PluginsDir())
+	pluginSvc := app.PluginSvc()
 	pluginList, err := pluginSvc.Discover()
 	if err != nil {
 		fmt.Printf("  FAIL  plugin discovery failed: %s\n", err)

@@ -73,7 +73,7 @@ func runGodot(app *App, args []string, editor bool) error {
 		return err
 	}
 
-	pluginSvc := plugins.NewService(app.PluginsDir())
+	pluginSvc := app.PluginSvc()
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("determining working directory: %w", err)

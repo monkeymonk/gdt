@@ -95,3 +95,17 @@ func TestConfig_CustomGodotAPIURL(t *testing.T) {
 		t.Errorf("unexpected: %s", cfg.GodotAPIURL())
 	}
 }
+
+func TestConfig_DefaultInstallScriptURL(t *testing.T) {
+	cfg := &Config{}
+	if cfg.InstallScriptURL() != "https://raw.githubusercontent.com/monkeymonk/gdt/main/scripts/install.sh" {
+		t.Errorf("unexpected default: %s", cfg.InstallScriptURL())
+	}
+}
+
+func TestConfig_CustomInstallScriptURL(t *testing.T) {
+	cfg := &Config{InstallScript: "https://example.com/fork/install.sh"}
+	if cfg.InstallScriptURL() != "https://example.com/fork/install.sh" {
+		t.Errorf("unexpected: %s", cfg.InstallScriptURL())
+	}
+}

@@ -7,11 +7,15 @@ import (
 	"strings"
 )
 
-// Resolve determines which Godot version to use by checking sources in order:
+// Resolve determines which Godot version to use for the current working
+// directory (startDir) by checking sources in order of precedence:
 // 1. .godot-version file (walks parent dirs from startDir)
-// 2. GDT_GODOT_VERSION env var
+// 2. GDT_GODOT_VERSION environment variable
 // 3. Config default version
 // 4. Latest installed version
+// This is the standard resolution order used when no explicit version
+// is specified. Use Resolve when the caller needs to determine the version
+// for a given directory per the full precedence chain.
 func (s *Service) Resolve(startDir string) (ResolvedVersion, error) {
 	// 1. .godot-version file
 	if v, err := resolveFromFile(startDir); err == nil {
@@ -46,8 +50,15 @@ func (s *Service) Resolve(startDir string) (ResolvedVersion, error) {
 	return ResolvedVersion{}, ErrNoVersion
 }
 
-// ResolveInstalledVersion resolves a version query against installed versions.
-// Supports exact match, "latest"/"stable" aliases, and prefix matching.
+// ResolveInstalledVersion matches a version query against already-installed
+// versions only. It supports three query types:
+// 1. Exact version match (e.g., "4.3.1")
+// 2. "latest" or "stable" aliases (returns the newest installed version)
+// 3. Prefix match (e.g., "4.3" matches "4.3.1", returns the highest match)
+// Unlike Resolve, this function does not check .godot-version files, environment
+// variables, or config defaults — only what is physically installed in the
+// versions directory. Use ResolveInstalledVersion when validating user input
+// against the set of available installations.
 func (s *Service) ResolveInstalledVersion(query string) (string, error) {
 	installed, err := s.ListVersionStrings()
 	if err != nil {

@@ -90,7 +90,7 @@ func runExportList(app *App) error {
 		fmt.Printf("  %s\n", p)
 	}
 
-	pluginSvc := plugins.NewService(app.PluginsDir())
+	pluginSvc := app.PluginSvc()
 	pluginPresets, _ := pluginSvc.DiscoverPresets()
 	if len(pluginPresets) > 0 {
 		fmt.Println("\nPlugin presets (append with: gdt export --add-preset <name>):")
@@ -148,7 +148,7 @@ func runExport(app *App, preset string, outputDir string, debug bool, verbose bo
 		exportFlag = "--export-debug"
 	}
 
-	pluginSvc := plugins.NewService(app.PluginsDir())
+	pluginSvc := app.PluginSvc()
 	hookCtx := plugins.HookContext{
 		ProjectRoot:  root,
 		GodotVersion: version,

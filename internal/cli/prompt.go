@@ -7,7 +7,6 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/metadata"
-	"github.com/monkeymonk/gdt/internal/plugins"
 )
 
 // promptVersion prompts the user to select from installed versions.
@@ -126,7 +125,7 @@ func promptInput(title string, placeholder string) (string, error) {
 
 // promptInstalledPlugin prompts the user to select from installed plugins.
 func promptInstalledPlugin(app *App, title string) (string, error) {
-	svc := plugins.NewService(app.PluginsDir())
+	svc := app.PluginSvc()
 	pluginList, err := svc.Discover()
 	if err != nil {
 		return "", engine.Actionable(

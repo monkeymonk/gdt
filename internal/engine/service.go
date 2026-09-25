@@ -44,6 +44,11 @@ type InstalledVersion struct {
 	IsDefault bool
 }
 
+// ResolveProject resolves the Godot version for an arbitrary project directory.
+// It first detects the project root from the given cwd, then applies Resolve
+// to determine which version applies to that project. Use ResolveProject when
+// you need to resolve for a non-current-working-directory, such as when
+// processing a project path specified by the user.
 func (s *Service) ResolveProject(cwd string) (projectRoot string, resolved ResolvedVersion, err error) {
 	projectRoot, err = project.DetectRoot(cwd)
 	if err != nil {

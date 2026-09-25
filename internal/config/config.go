@@ -13,11 +13,13 @@ type Config struct {
 	Mirrors        []string `toml:"mirrors,omitempty"`
 	GodotAPI       string   `toml:"godot_api,omitempty"`
 	SelfUpdateAPI  string   `toml:"selfupdate_api,omitempty"`
+	InstallScript  string   `toml:"install_script_url,omitempty"`
 }
 
 const (
-	defaultGodotAPI      = "https://api.github.com/repos/godotengine/godot/releases"
-	defaultSelfUpdateAPI = "https://api.github.com/repos/monkeymonk/gdt/releases/latest"
+	defaultGodotAPI         = "https://api.github.com/repos/godotengine/godot/releases"
+	defaultSelfUpdateAPI    = "https://api.github.com/repos/monkeymonk/gdt/releases/latest"
+	defaultInstallScriptURL = "https://raw.githubusercontent.com/monkeymonk/gdt/main/scripts/install.sh"
 )
 
 func (c *Config) GodotAPIURL() string {
@@ -32,6 +34,13 @@ func (c *Config) SelfUpdateAPIURL() string {
 		return c.SelfUpdateAPI
 	}
 	return defaultSelfUpdateAPI
+}
+
+func (c *Config) InstallScriptURL() string {
+	if c.InstallScript != "" {
+		return c.InstallScript
+	}
+	return defaultInstallScriptURL
 }
 
 func Load(path string) (*Config, error) {

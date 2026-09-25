@@ -11,7 +11,10 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
+
+var httpClient = &http.Client{Timeout: 30 * time.Second}
 
 // ResolveBinary ensures the plugin binary exists after cloning.
 // Resolution order:
@@ -55,7 +58,7 @@ func downloadReleaseBinary(binPath, binName, repoSlug string) error {
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("github api: %w", err)
 	}
@@ -133,7 +136,7 @@ func buildAssetCandidates(name, goos, goarch string) []string {
 }
 
 func downloadFile(dest, url string) error {
-	resp, err := http.Get(url)
+	resp, err := httpClient.Get(url)
 	if err != nil {
 		return err
 	}

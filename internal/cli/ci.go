@@ -42,7 +42,7 @@ func newCiSetupCmd(app *App) *cobra.Command {
 }
 
 func runCiSetup(app *App, provider string) error {
-	pluginSvc := plugins.NewService(app.PluginsDir())
+	pluginSvc := app.PluginSvc()
 	pluginProviders, _ := pluginSvc.DiscoverCIProviders()
 
 	if provider == "" {
@@ -124,7 +124,7 @@ func runCiSetup(app *App, provider string) error {
 		return nil
 	}
 
-	content := ci.Generate(provider)
+	content := ci.Generate(provider, app.Config.InstallScriptURL())
 	if content == "" {
 		return fmt.Errorf("unknown provider: %s", provider)
 	}

@@ -639,11 +639,16 @@ default_version = "4.3"
 mirrors = [
   "https://mirror.example.com/godot/releases",
 ]
+install_script_url = "https://raw.githubusercontent.com/monkeymonk/gdt/main/scripts/install.sh"
 ```
 
 ### Mirrors
 
 When the primary GitHub download URL is unavailable, gdt tries configured mirror URLs as fallbacks. Mirrors are checked with HEAD requests before downloading.
+
+### CI Install Script URL
+
+`install_script_url` overrides the install-script URL baked into `gdt ci setup`-generated CI output (GitHub Actions, GitLab CI, and the generic shell script). Defaults to gdt's own `scripts/install.sh`; set this for a fork, an internal mirror, or an air-gapped CI environment that can't reach `raw.githubusercontent.com`.
 
 ### Environment Variables
 

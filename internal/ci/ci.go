@@ -1,6 +1,9 @@
 package ci
 
-import "path"
+import (
+	"fmt"
+	"path"
+)
 
 type Provider struct {
 	Name  string
@@ -28,21 +31,21 @@ func OutputPath(provider string) string {
 	}
 }
 
-func Generate(provider string) string {
+func Generate(provider string, installScriptURL string) string {
 	switch provider {
 	case "github":
-		return GenerateGitHub()
+		return GenerateGitHub(installScriptURL)
 	case "gitlab":
-		return GenerateGitLab()
+		return GenerateGitLab(installScriptURL)
 	case "generic":
-		return GenerateGeneric()
+		return GenerateGeneric(installScriptURL)
 	default:
 		return ""
 	}
 }
 
-func GenerateGitHub() string {
-	return `name: Export Game
+func GenerateGitHub(installScriptURL string) string {
+	return fmt.Sprintf(`name: Export Game
 
 on:
   push:
@@ -58,7 +61,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install gdt
-        run: curl -fsSL https://raw.githubusercontent.com/monkeymonk/gdt/main/scripts/install.sh | sh
+        run: curl -fsSL %s | sh
 
       - name: Install engine
         run: gdt install
@@ -74,18 +77,18 @@ jobs:
         with:
           name: game-linux
           path: dist/
-`
+`, installScriptURL)
 }
 
-func GenerateGitLab() string {
-	return `stages:
+func GenerateGitLab(installScriptURL string) string {
+	return fmt.Sprintf(`stages:
   - export
 
 export:
   stage: export
   image: ubuntu:latest
   before_script:
-    - curl -fsSL https://raw.githubusercontent.com/monkeymonk/gdt/main/scripts/install.sh | sh
+    - curl -fsSL %s | sh
     - gdt install
     - gdt templates install $(cat .godot-version)
   script:
@@ -93,16 +96,16 @@ export:
   artifacts:
     paths:
       - dist/
-`
+`, installScriptURL)
 }
 
-func GenerateGeneric() string {
-	return `#!/usr/bin/env bash
+func GenerateGeneric(installScriptURL string) string {
+	return fmt.Sprintf(`#!/usr/bin/env bash
 set -euo pipefail
 
 # Install gdt if not available
 if ! command -v gdt &> /dev/null; then
-    curl -fsSL https://raw.githubusercontent.com/monkeymonk/gdt/main/scripts/install.sh | sh
+    curl -fsSL %s | sh
 fi
 
 # Install engine and templates
@@ -113,5 +116,5 @@ gdt templates install "$(cat .godot-version)"
 gdt export Linux/X11
 
 echo "Export complete: dist/"
-`
+`, installScriptURL)
 }

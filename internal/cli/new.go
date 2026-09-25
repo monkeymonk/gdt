@@ -117,7 +117,7 @@ func runListTemplates(app *App) error {
 		fmt.Printf("  %s\n", t)
 	}
 
-	svc := plugins.NewService(app.PluginsDir())
+	svc := app.PluginSvc()
 	templates, err := svc.DiscoverTemplates()
 	if err != nil {
 		return err
@@ -221,7 +221,7 @@ func runNew(app *App, listTemplates bool, name string, templateURL string, versi
 		projectDir = filepath.Join(".", name)
 	}
 
-	pluginSvc := plugins.NewService(app.PluginsDir())
+	pluginSvc := app.PluginSvc()
 	hookCtx := plugins.HookContext{
 		ProjectRoot:  projectDir,
 		GodotVersion: version,

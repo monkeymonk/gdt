@@ -41,7 +41,7 @@ func newCompletionCmd(app *App) *cobra.Command {
 			}
 
 			// Append plugin completions
-			svc := plugins.NewService(app.PluginsDir())
+			svc := app.PluginSvc()
 			for _, p := range svc.DiscoverCompletionPlugins() {
 				binPath := filepath.Join(p.Dir, p.Manifest.Name)
 				out, runErr := plugins.RunPluginSubcommand(

@@ -20,9 +20,25 @@ type HookContext struct {
 }
 
 // RunHooks discovers all plugins and executes hooks for the given event.
+// The plugin hook lifecycle consists of eight HookEvents:
+//   - BeforeNew and AfterNew: fire around `gdt new` command execution
+//   - BeforeExport and AfterExport: fire around `gdt export` command execution
+//   - BeforeRun: fires before `gdt run` command execution
+//   - AfterInstall: fires after `gdt install` command completion
+//   - AfterUse: fires after `gdt use` command completion
+//   - AfterCISetup: fires after `gdt ci setup` command completion
+//
+// Each hook receives a HookContext with ProjectRoot, GodotVersion, and
+// EnginePath. Plugins run in alphabetical order by name.
+//
+// Failure handling follows the fatal/warning split documented in
+// .framework/CONTRACTS.md Failure semantics: plugin hook failures are
+// fatal (non-zero exit under V2, or exit code 2 under V1) and abort
+// the operation; warnings (V2 hook exit 0 with WARN lines, or V1 non-zero
+// non-2 exit) surface but do not abort.
+//
 // V2 plugins (with [contributions]) use binary subcommand protocol.
 // V1 plugins (with [hooks] shell strings) use legacy shell execution.
-// Plugins run in alphabetical order by name.
 func (s *Service) RunHooks(event HookEvent, ctx HookContext) error {
 	plugins, err := s.Discover()
 	if err != nil {

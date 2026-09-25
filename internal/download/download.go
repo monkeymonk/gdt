@@ -8,7 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 )
+
+var httpClient = &http.Client{Timeout: 30 * time.Second}
 
 // DownloadOpts controls optional download behavior.
 // Zero-value preserves current behavior (no resume, no mirrors).
@@ -44,7 +47,7 @@ func File(ctx context.Context, url string, dest string, opts DownloadOpts) error
 		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return err
 	}

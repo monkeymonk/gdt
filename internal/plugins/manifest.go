@@ -3,8 +3,12 @@ package plugins
 import "github.com/BurntSushi/toml"
 
 // HookEvent represents a lifecycle event that plugins can hook into.
+// See RunHooks in hooks.go for the canonical description of the plugin hook
+// lifecycle, when each event fires, and failure-handling semantics.
 type HookEvent string
 
+// HookEvent constants: refer to RunHooks in hooks.go for the canonical
+// lifecycle description and when each event fires.
 const (
 	BeforeNew    HookEvent = "before_new"
 	AfterNew     HookEvent = "after_new"

@@ -40,6 +40,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   when it can't determine the running binary's own path (a rare,
   sandboxed-environment edge case) — it now keeps the already-resolved
   fallback directory instead.
+- The Godot engine download (`gdt install`), the self-update release
+  check (`FetchLatestRelease`), and plugin binary resolution
+  (`gdt plugin install`) no longer use an unbounded HTTP client — all
+  three now share the same 30s-timeout-configured client already used
+  elsewhere, closing a hang risk on a stalled connection that an
+  earlier round's timeout fix missed on these three call sites.
 
 ### Added
 
@@ -53,6 +59,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (numeric comparison, e.g. `4.10` above `4.9`) instead of an
   alphabetical or API-incidental order — including when the result
   comes from a cached `gdt ls-remote` response, not just a fresh fetch.
+- Plugin discovery now runs at most once per `gdt` invocation instead
+  of once per command handler / hook call — internal change, no
+  user-visible behavior difference beyond commands that invoke
+  multiple plugin hooks (e.g. `gdt new`) doing noticeably less
+  filesystem I/O.
 - Metadata cache-write failures (`gdt update`, `gdt ls-remote`, `gdt
   install`) are now observable under `GDT_DEBUG=1` instead of being
   fully silent; behavior is unchanged (a cache-write failure still never

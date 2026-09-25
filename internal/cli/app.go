@@ -8,6 +8,7 @@ import (
 	"github.com/monkeymonk/gdt/internal/config"
 	"github.com/monkeymonk/gdt/internal/engine"
 	"github.com/monkeymonk/gdt/internal/platform"
+	"github.com/monkeymonk/gdt/internal/plugins"
 )
 
 type App struct {
@@ -17,6 +18,8 @@ type App struct {
 	ConfigPath string
 	Platform   platform.Info
 	Debug      bool
+
+	pluginSvc *plugins.Service
 }
 
 func NewApp(version string) (*App, error) {
@@ -48,4 +51,14 @@ func (a *App) PluginsDir() string {
 
 func (a *App) EngineSvc() *engine.Service {
 	return engine.NewService(a.Home, a.Platform, a.Config)
+}
+
+// PluginSvc returns the App's plugin service, constructing it on first use
+// and returning the same instance on every subsequent call so that a single
+// `gdt` invocation shares one plugin-discovery cache across call sites.
+func (a *App) PluginSvc() *plugins.Service {
+	if a.pluginSvc == nil {
+		a.pluginSvc = plugins.NewService(a.PluginsDir())
+	}
+	return a.pluginSvc
 }
